@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2010-2014 Rod Roark <rod@sunsetsystems.com>
+// Copyright (C) 2010-2017 Rod Roark <rod@sunsetsystems.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -15,49 +15,65 @@ $parent = formData('parent', 'R') + 0;
 
 $info_msg = "";
 
-function QuotedOrNull($fld) {
-  $fld = formDataCore($fld,true);
-  if ($fld) return "'$fld'";
-  return "NULL";
+function QuotedOrNull($fld)
+{
+    $fld = formDataCore($fld, true);
+    if ($fld) {
+        return "'$fld'";
+    }
+
+    return "NULL";
 }
 
-function invalue($name) {
-  $fld = formData($name,"P",true);
-  return "'$fld'";
+function invalue($name)
+{
+    $fld = formData($name, "P", true);
+    return "'$fld'";
 }
 
-function rbinput($name, $value, $desc, $colname) {
-  global $row;
-  $ret  = "<input type='radio' name='$name' value='$value'";
-  if ($row[$colname] == $value) $ret .= " checked";
-  $ret .= " />$desc";
-  return $ret;
+function rbinput($name, $value, $desc, $colname)
+{
+    global $row;
+    $ret  = "<input type='radio' name='$name' value='$value'";
+    if ($row[$colname] == $value) {
+        $ret .= " checked";
+    }
+
+    $ret .= " />$desc";
+    return $ret;
 }
 
-function rbvalue($rbname) {
-  $tmp = $_POST[$rbname];
-  if (! $tmp) $tmp = '0';
-  return "'$tmp'";
+function rbvalue($rbname)
+{
+    $tmp = $_POST[$rbname];
+    if (! $tmp) {
+        $tmp = '0';
+    }
+
+    return "'$tmp'";
 }
 
-function cbvalue($cbname) {
-  return empty($_POST[$cbname]) ? 0 : 1;
+function cbvalue($cbname)
+{
+    return empty($_POST[$cbname]) ? 0 : 1;
 }
 
-function recursiveDelete($typeid) {
-  $res = sqlStatement("SELECT procedure_type_id FROM " .
+function recursiveDelete($typeid)
+{
+    $res = sqlStatement("SELECT procedure_type_id FROM " .
     "procedure_type WHERE parent = '$typeid'");
-  while ($row = sqlFetchArray($res)) {
-    recursiveDelete($row['procedure_type_id']);
-  }
-  sqlStatement("DELETE FROM procedure_type WHERE " .
+    while ($row = sqlFetchArray($res)) {
+        recursiveDelete($row['procedure_type_id']);
+    }
+
+    sqlStatement("DELETE FROM procedure_type WHERE " .
     "procedure_type_id = '$typeid'");
 }
 
 ?>
 <html>
 <head>
-<script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>    
+<script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
 <title><?php echo $typeid ? xlt('Edit') : xlt('Add New'); ?> <?php echo xlt('Order/Result Type'); ?></title>
 <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
 
@@ -105,11 +121,23 @@ function set_related(codetype, code, selector, codedesc) {
  f[rcvarname].value = s;
 }
 
+// This is for callback by the find-code popup.
+// Returns the array of currently selected codes with each element in codetype:code format.
+function get_related() {
+ return document.forms[0][rcvarname].value.split(';');
+}
+
+// This is for callback by the find-code popup.
+// Deletes the specified codetype:code from the currently selected list.
+function del_related(s) {
+ my_del_related(s, document.forms[0][rcvarname], false);
+}
+
 // This invokes the find-code popup.
 function sel_related(varname) {
  if (typeof varname == 'undefined') varname = 'form_related_code';
  rcvarname = varname;
- dlgopen('../patient_file/encounter/find_code_popup.php', '_blank', 500, 400);
+ dlgopen('../patient_file/encounter/find_code_dynamic.php', '_blank', 900, 600);
 }
 
 // Show or hide sections depending on procedure type.
@@ -139,8 +167,7 @@ $(document).ready(function() {
 // If we are saving, then save and close the window.
 //
 if ($_POST['form_save']) {
-
-  $sets =
+    $sets =
     "name = "           . invalue('form_name')           . ", " .
     "lab_id = "         . invalue('form_lab_id')         . ", " .
     "procedure_code = " . invalue('form_procedure_code') . ", " .
@@ -156,45 +183,43 @@ if ($_POST['form_save']) {
     "related_code = "   . invalue('form_related_code')   . ", " .
     "seq = "            . invalue('form_seq');
 
-  if ($typeid) {
-    sqlStatement("UPDATE procedure_type SET $sets WHERE procedure_type_id = '$typeid'");
-    // Get parent ID so we can refresh the tree view.
-    $row = sqlQuery("SELECT parent FROM procedure_type WHERE " .
-      "procedure_type_id = '$typeid'");
-    $parent = $row['parent'];
-  } else {
-    $newid = sqlInsert("INSERT INTO procedure_type SET parent = '$parent', $sets");
-    // $newid is not really used in this script
-  }
-}
-
-else  if ($_POST['form_delete']) {
-
-  if ($typeid) {
-    // Get parent ID so we can refresh the tree view after deleting.
-    $row = sqlQuery("SELECT parent FROM procedure_type WHERE " .
-      "procedure_type_id = '$typeid'");
-    $parent = $row['parent'];
-    recursiveDelete($typeid);
-  }
-
+    if ($typeid) {
+        sqlStatement("UPDATE procedure_type SET $sets WHERE procedure_type_id = '$typeid'");
+        // Get parent ID so we can refresh the tree view.
+        $row = sqlQuery("SELECT parent FROM procedure_type WHERE " .
+        "procedure_type_id = '$typeid'");
+        $parent = $row['parent'];
+    } else {
+        $newid = sqlInsert("INSERT INTO procedure_type SET parent = '$parent', $sets");
+        // $newid is not really used in this script
+    }
+} else if ($_POST['form_delete']) {
+    if ($typeid) {
+        // Get parent ID so we can refresh the tree view after deleting.
+        $row = sqlQuery("SELECT parent FROM procedure_type WHERE " .
+        "procedure_type_id = '$typeid'");
+        $parent = $row['parent'];
+        recursiveDelete($typeid);
+    }
 }
 
 if ($_POST['form_save'] || $_POST['form_delete']) {
   // Find out if this parent still has any children.
-  $trow = sqlQuery("SELECT procedure_type_id FROM procedure_type WHERE parent = '$parent' LIMIT 1");
-  $haskids = empty($trow['procedure_type_id']) ? 'false' : 'true';
+    $trow = sqlQuery("SELECT procedure_type_id FROM procedure_type WHERE parent = '$parent' LIMIT 1");
   // Close this window and redisplay the updated list.
-  echo "<script language='JavaScript'>\n";
-  if ($info_msg) echo " alert('$info_msg');\n";
-  echo " window.close();\n";
-  echo " if (opener.refreshFamily) opener.refreshFamily($parent,$haskids);\n";
-  echo "</script></body></html>\n";
-  exit();
+    echo "<script language='JavaScript'>\n";
+    if ($info_msg) {
+        echo " alert('$info_msg');\n";
+    }
+
+    echo " window.close();\n";
+    echo " if (opener.refreshFamily) opener.refreshFamily($parent,'true');\n";
+    echo "</script></body></html>\n";
+    exit();
 }
 
 if ($typeid) {
-  $row = sqlQuery("SELECT * FROM procedure_type WHERE procedure_type_id = '$typeid'");
+    $row = sqlQuery("SELECT * FROM procedure_type WHERE procedure_type_id = '$typeid'");
 }
 ?>
 <form method='post' name='theform'
@@ -209,8 +234,15 @@ if ($typeid) {
   <td width='1%' nowrap><b><?php echo xlt('Procedure Type'); ?>:</b></td>
   <td>
 <?php
-echo generate_select_list('form_procedure_type', 'proc_type', $row['procedure_type'],
-  xl('The type of this entity'), ' ', '', 'proc_type_changed()');
+echo generate_select_list(
+    'form_procedure_type',
+    'proc_type',
+    $row['procedure_type'],
+    xl('The type of this entity'),
+    ' ',
+    '',
+    'proc_type_changed()'
+);
 ?>
   </td>
  </tr>
@@ -249,14 +281,17 @@ echo generate_select_list('form_procedure_type', 'proc_type', $row['procedure_ty
   <td width='1%' nowrap><b><?php echo xlt('Order From'); ?>:</b></td>
   <td>
    <select name='form_lab_id' title='<?php echo xla('The entity performing this procedure'); ?>'>
- <?php
-  $ppres = sqlStatement("SELECT ppid, name FROM procedure_providers " .
+    <?php
+    $ppres = sqlStatement("SELECT ppid, name FROM procedure_providers " .
     "ORDER BY name, ppid");
-  while ($pprow = sqlFetchArray($ppres)) {
-    echo "<option value='" . attr($pprow['ppid']) . "'";
-    if ($pprow['ppid'] == $row['lab_id']) echo " selected";
-    echo ">" . text($pprow['name']) . "</option>";
-  }
+    while ($pprow = sqlFetchArray($ppres)) {
+        echo "<option value='" . attr($pprow['ppid']) . "'";
+        if ($pprow['ppid'] == $row['lab_id']) {
+            echo " selected";
+        }
+
+        echo ">" . text($pprow['name']) . "</option>";
+    }
 ?>
    </select>
   </td>
@@ -303,10 +338,12 @@ generate_form_field(array('data_type' => 1, 'field_id' => 'body_site',
   <td width='1%' nowrap><b><?php echo xlt('Specimen Type'); ?>:</b></td>
   <td>
 <?php
-generate_form_field(array('data_type' => 1, 'field_id' => 'specimen',
-  'list_id' => 'proc_specimen',
-  'description' => xl('Specimen Type')),
-  $row['specimen']);
+generate_form_field(
+    array('data_type' => 1, 'field_id' => 'specimen',
+    'list_id' => 'proc_specimen',
+    'description' => xl('Specimen Type')),
+    $row['specimen']
+);
 ?>
   </td>
  </tr>
@@ -315,10 +352,12 @@ generate_form_field(array('data_type' => 1, 'field_id' => 'specimen',
   <td width='1%' nowrap><b><?php echo xlt('Administer Via'); ?>:</b></td>
   <td>
 <?php
-generate_form_field(array('data_type' => 1, 'field_id' => 'route_admin',
-  'list_id' => 'proc_route',
-  'description' => xl('Route of administration, if applicable')),
-  $row['route_admin']);
+generate_form_field(
+    array('data_type' => 1, 'field_id' => 'route_admin',
+    'list_id' => 'proc_route',
+    'description' => xl('Route of administration, if applicable')),
+    $row['route_admin']
+);
 ?>
   </td>
  </tr>
@@ -327,10 +366,12 @@ generate_form_field(array('data_type' => 1, 'field_id' => 'route_admin',
   <td width='1%' nowrap><b><?php echo xlt('Laterality'); ?>:</b></td>
   <td>
 <?php
-generate_form_field(array('data_type' => 1, 'field_id' => 'laterality',
-  'list_id' => 'proc_lat',
-  'description' => xl('Laterality of this procedure, if applicable')),
-  $row['laterality']);
+generate_form_field(
+    array('data_type' => 1, 'field_id' => 'laterality',
+    'list_id' => 'proc_lat',
+    'description' => xl('Laterality of this procedure, if applicable')),
+    $row['laterality']
+);
 ?>
   </td>
  </tr>
@@ -339,10 +380,12 @@ generate_form_field(array('data_type' => 1, 'field_id' => 'laterality',
   <td width='1%' nowrap><b><?php echo xlt('Default Units'); ?>:</b></td>
   <td>
 <?php
-generate_form_field(array('data_type' => 1, 'field_id' => 'units',
-  'list_id' => 'proc_unit',
-  'description' => xl('Optional default units for manual entry of results')),
-  $row['units']);
+generate_form_field(
+    array('data_type' => 1, 'field_id' => 'units',
+    'list_id' => 'proc_unit',
+    'description' => xl('Optional default units for manual entry of results')),
+    $row['units']
+);
 ?>
   </td>
  </tr>

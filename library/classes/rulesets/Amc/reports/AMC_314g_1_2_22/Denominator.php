@@ -4,7 +4,7 @@
  * AMC 314g_1_2_22 STAGE1 Denominator
  *
  * Copyright (C) 2015 Ensoftek, Inc
- * Copyright (C) 2015 Brady Miller <brady@sparmy.com>
+ * Copyright (C) 2015 Brady Miller <brady.g.miller@gmail.com>
  *
  * LICENSE: This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
  *
  * @package OpenEMR
  * @author  Ensoftek
- * @author  Brady Miller <brady@sparmy.com>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
  * @link    http://www.open-emr.org
  */
 class AMC_314g_1_2_22_Denominator implements AmcFilterIF
@@ -29,15 +29,14 @@ class AMC_314g_1_2_22_Denominator implements AmcFilterIF
         return "AMC_314g_1_2_22 Denominator";
     }
     
-    public function test( AmcPatient $patient, $beginDate, $endDate )
+    public function test(AmcPatient $patient, $beginDate, $endDate)
     {
-        // Seen by the EP 
+        // Seen by the EP
         //  (basically needs an Office Visit within the report dates)
         $options = array( Encounter::OPTION_ENCOUNTER_COUNT => 1 );
-        if ( Helper::check(ClinicalType::ENCOUNTER, Encounter::ENC_OFF_VIS, $patient, $beginDate, $endDate, $options) ) {
+        if (Helper::check(ClinicalType::ENCOUNTER, Encounter::ENC_OFF_VIS, $patient, $beginDate, $endDate, $options)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }

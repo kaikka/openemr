@@ -2,7 +2,7 @@
 /**
  * class AMC_304h_Numerator
  *
- * Copyright (C) 2011-2015 Brady Miller <brady@sparmy.com>
+ * Copyright (C) 2011-2015 Brady Miller <brady.g.miller@gmail.com>
  *
  * LICENSE: This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
  * @package OpenEMR
- * @author  Brady Miller <brady@sparmy.com>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
  * @link    http://www.open-emr.org
  */
 
@@ -27,15 +27,15 @@ class AMC_304h_Numerator implements AmcFilterIF
         return "AMC_304h Numerator";
     }
     
-    public function test( AmcPatient $patient, $beginDate, $endDate )
+    public function test(AmcPatient $patient, $beginDate, $endDate)
     {
         // Need patient summary given/sent to patient within 3 business days of each encounter.
-        $amcElement = amcCollect('provide_sum_pat_amc',$patient->id,'form_encounter',$patient->object['encounter']);
+        $amcElement = amcCollect('provide_sum_pat_amc', $patient->id, 'form_encounter', $patient->object['encounter']);
         if (!(empty($amcElement))) {
-          $daysDifference = businessDaysDifference( date("Y-m-d",strtotime($patient->object['date'])) , date("Y-m-d",strtotime($amcElement['date_completed'])) );
-          if ($daysDifference < 4) {
-            return true;
-          }
+            $daysDifference = businessDaysDifference(date("Y-m-d", strtotime($patient->object['date'])), date("Y-m-d", strtotime($amcElement['date_completed'])));
+            if ($daysDifference < 4) {
+                return true;
+            }
         }
 
         return false;

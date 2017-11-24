@@ -1,5 +1,5 @@
 <?php
-// +-----------------------------------------------------------------------------+ 
+// +-----------------------------------------------------------------------------+
 // Copyright (C) 2015 Z&H Consultancy Services Private Limited <sam@zhservices.com>
 //
 //
@@ -19,11 +19,10 @@
 // openemr/interface/login/GnuGPL.html
 // For more information write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-// 
+//
 // Author:   Jacob T Paul <jacob@zhservices.com>
 //           Vinish K <vinish@zhservices.com>
 //
 // +------------------------------------------------------------------------------+
 
 require("new.php");
-?>

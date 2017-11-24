@@ -14,7 +14,6 @@
 
 [-*Values used in setting timeslot and event heights*-]
 [-php-]
-require_once($GLOBALS['srcdir'] . "/formatting.inc.php");
 /* if you change these be sure to change their matching values in
  * the CSS for the calendar, found in interface/themes/ajax_calendar.css
  */
@@ -51,6 +50,11 @@ $timeslotHeightUnit="px";
   dlgopen('add_edit_event.php?date='+eventdate+'&eid=' + eventid+'&prov=' + pccattype, '_blank', 775, 500);
  }
 
+ function oldGroupEvt(eventdate, eventid, pccattype){
+  top.restoreSession();
+  dlgopen('add_edit_event.php?group=true&date='+eventdate+'&eid=' + eventid+'&prov=' + pccattype, '_blank', 775, 500);
+ }
+
  function goPid(pid) {
   top.restoreSession();
 [-php-]
@@ -58,6 +62,15 @@ $timeslotHeightUnit="px";
 		   "+ '?set_pid=' + pid;\n";
 [-/php-]
  }
+
+ function goGid(gid) {
+  top.restoreSession();
+[-php-]
+        echo "  top.RTop.location = '" . $GLOBALS['rootdir'] . "/therapy_groups/index.php' " .
+        "+ '?method=groupDetails&group_id=' + gid \n ";
+[-/php-]
+ }
+
 
  function GoToToday(theForm){
   var todays_date = new Date();
@@ -144,10 +157,10 @@ $timeslotHeightUnit="px";
 <input type="hidden" name="jumpdate" id="jumpdate" value="">
 <input type="hidden" name="viewtype" id="viewtype" value="[-php-]echo $viewtype;[-/php-]">
 [-php-]
-echo "   <a href='#' title='" . xl("New Appointment") . "' onclick='newEvt(1, 9, 00, $Date, 0, 0)' class='css_button'>
+echo "   <a href='#' title='" . xl("New Appointment") . "' onclick='newEvt(1, 9, 00, $Date, 0, 0)' class='css_button css_button_icon'>
             <i class='fa fa-plus' aria-hidden='true'></i></a>\n";
 echo "   <a href='#' title='" . xl("Search Appointment") . "'
-            onclick='top.restoreSession();location=\"index.php?module=PostCalendar&func=search\"' class='css_button'>
+            onclick='top.restoreSession();location=\"index.php?module=PostCalendar&func=search\"' class='css_button css_button_icon'>
             <i class='fa fa-search' aria-hidden='true'></i></a>\n";
 [-/php-]
 </div>
@@ -157,22 +170,22 @@ echo "   <a href='#' title='" . xl("Search Appointment") . "'
 <a href='#' name='bnsubmit' value='[-php-]echo xl ("Today")[-/php-]' onClick='GoToToday(theform);'  class='css_button'/><span>[-php-] echo xl("Today")[-/php-]</span></a>
 [-php-]
 echo "   <a id='prevweek' href='$PREV_WEEK_URL' onclick='top.restoreSession()' title='" . xl("Previous Week") . "'>
-            <i class='fa fa-arrow-left' aria-hidden='true'></i></a>\n";
+            <i class='fa fa-chevron-circle-left chevron_color' aria-hidden='true'></i></a>\n";
 $atmp = array_keys($A_EVENTS);
 echo date('d', strtotime($atmp[0])) . " " . xl(date('M', strtotime($atmp[0]))) . " " . date('Y', strtotime($atmp[0]));
 echo " - ";
 echo date('d', strtotime($atmp[count($atmp)-1])) . " " . xl(date('M', strtotime($atmp[count($atmp)-1]))) . " " . date('Y', strtotime($atmp[count($atmp)-1]));
 echo "   <a id='nextweek' href='$NEXT_WEEK_URL' onclick='top.restoreSession()' title='" . xl("Next Week") . "'>
-            <i class='fa fa-arrow-right' aria-hidden='true'></i></a>\n";
+            <i class= 'fa fa-chevron-circle-right chevron_color' aria-hidden='true'></i></a>\n";
 [-/php-]
 </div>
 
 <div id="viewPicker">
 [-php-]
 
-echo "   <a href='#' id='printview' title='" . xl("View Printable Version") . "' class='css_button'>
+echo "  <a href='#' id='printview' title='" . xl("View Printable Version") . "' class='css_button css_button_icon'>
             <i class='fa fa-print' aria-hidden='true'></i></a>\n";
-echo "   <a href='#' title='" . xl("Refresh") . "' onclick='javascript:refreshme()' class='css_button'>
+echo "   <a href='#' title='" . xl("Refresh") . "' onclick='javascript:refreshme()' class='css_button css_button_icon'>
             <i class='fa fa-refresh' aria-hidden='true'></i></a>\n";
 echo "   <a href='#' type='button' id='dayview' title='" .htmlspecialchars( xl('Day View'), ENT_QUOTES). "' class='css_button'/><span>".htmlspecialchars( xl('Day'), ENT_QUOTES) ."</span></a>\n";
 echo "   <a href='#' type='button' id='weekview' title='" .htmlspecialchars( xl('Week View'), ENT_QUOTES). "' class='css_button'/><span>".htmlspecialchars( xl('Week'), ENT_QUOTES)."</span></a>\n";
@@ -336,7 +349,7 @@ if (count($facilities) > 1) {
  echo "    <option value='__PC_ALL__'>"  .xl ("All Users"). "</option>\n";
  foreach ($provinfo as $doc) {
   $username = $doc['username'];
-  echo "    <option value='$username'";
+  echo "    <option value='" . attr($username) . "'";
   foreach ($providers as $provider)
    if ($provider['username'] == $username) echo " selected";
   echo ">" . htmlspecialchars($doc['lname'],ENT_QUOTES) . ", " . htmlspecialchars($doc['fname'],ENT_QUOTES) . "</option>\n";
@@ -655,20 +668,31 @@ foreach ($providers as $provider) {
             }
 
             $eventid = $event['eid'];
-	    $eventtype = sqlQuery("SELECT pc_cattype FROM openemr_postcalendar_categories as oc LEFT OUTER JOIN openemr_postcalendar_events as oe ON oe.pc_catid=oc.pc_catid WHERE oe.pc_eid='".$eventid."'");
-	    $pccattype = '';
-	    if($eventtype['pc_cattype']==1)
-	    $pccattype = 'true';
+	        $eventtype = sqlQuery("SELECT pc_cattype FROM openemr_postcalendar_categories as oc LEFT OUTER JOIN openemr_postcalendar_events as oe ON oe.pc_catid=oc.pc_catid WHERE oe.pc_eid='".$eventid."'");
+	        $pccattype = '';
+	        if($eventtype['pc_cattype']==1)
+	        $pccattype = 'true';
             $patientid = $event['pid'];
             $commapos = strpos($event['patient_name'], ",");
             $lname = substr($event['patient_name'], 0, $commapos);
-	    $fname = substr($event['patient_name'], $commapos + 2);
+	        $fname = substr($event['patient_name'], $commapos + 2);
             $patient_dob = $event['patient_dob'];
             $patient_age = $event['patient_age'];
             $catid = $event['catid'];
             $comment = addslashes($event['hometext']);
             $catname = $event['catname'];
             $title = "Age $patient_age ($patient_dob)";
+
+            //Variables for therapy groups
+            $groupid = $event['gid'];
+            if($groupid) $patientid = '';
+            $groupname = $event['group_name'];
+            $grouptype = $event['group_type'];
+            $groupstatus = $event['group_status'];
+            $groupcounselors = '';
+            foreach($event['group_counselors'] as $counselor){
+                $groupcounselors .= getUserNameById($counselor) . " \n ";
+            }
 
             $content = "";
 
@@ -701,7 +725,13 @@ foreach ($providers as $provider) {
             }
             else {
                 // some sort of patient appointment
-                $divTitle .= "\r\n[".$catname.' '.htmlspecialchars($comment, ENT_QUOTES) ."] ".htmlspecialchars($fname,ENT_QUOTES)." ".htmlspecialchars($lname,ENT_QUOTES);
+                if($groupid){
+                    $divTitle .= "\n" . xlt('Counselors') . ": \n" . htmlspecialchars($groupcounselors,ENT_QUOTES). " \n";
+                    $divTitle .= "\r\n[".$catname.' '.htmlspecialchars($comment, ENT_QUOTES) ."]".htmlspecialchars($groupname, ENT_QUOTES);
+                }
+                else
+                    $divTitle .= "\r\n[".$catname.' '.htmlspecialchars($comment, ENT_QUOTES) ."]".htmlspecialchars($fname, ENT_QUOTES)." ".htmlspecialchars($lname, ENT_QUOTES);
+
                 $content .= "<span class='appointment".$apptToggle."'>";
                 $content .= create_event_time_anchor($dispstarth . ':' . $startm);
                 if ($event['recurrtype'] > 0) $content .= "<img src='{$this->_tpl_vars[TPL_IMAGE_PATH]}/repeating8.png' border='0' style='margin:0px 2px 0px 2px;' title='Repeating event' alt='Repeating event'>";
@@ -728,6 +758,30 @@ foreach ($providers as $provider) {
                     if ($catid == 1) $content .= "</strike>";
 
                     $content .= "</a>";
+                }
+                elseif($groupid){
+                    $divTitle .= "\n" . getTypeName($grouptype) . "\n";
+                    $link_title = '';
+                    $link_title .= $divTitle ."\n";
+                    $link_title .= "(" . xl('Click to view') . ")";
+                    $content .= "<a href='javascript:goGid($groupid)' title='$link_title'>";
+                    $content .= "<img src='{$this->_tpl_vars[TPL_IMAGE_PATH]}/user-blue.gif' border='0' title='$link_title' alt='View Patient' />";
+                    if ($catid == 1) $content .= "<strike>";
+                    $content .= htmlspecialchars($groupname);
+                    if ($GLOBALS['calendar_appt_style'] != 1) {
+                        if ($event['title'] && $GLOBALS['calendar_appt_style'] >= 3) {
+                            $content .= "(" . $event['title'];
+                            if ($event['hometext'] && $GLOBALS['calendar_appt_style'] >= 4)
+                            $content .= ": <font color='green'>" . htmlspecialchars(trim($event['hometext'])) . "</font>";
+                            $content .= ")";
+                        }
+                    }
+                    if ($catid == 1) $content .= "</strike>";
+                    $content .= "</a>";
+
+                    //Add class to wrapping div so EditEvent js function can differentiate between click on group and patient
+                    $evtClass .= ' groups ';
+
                 }
                 else {
                       //Category Clinic closaed or holiday take the event title
@@ -855,6 +909,11 @@ foreach ($providers as $provider) {
         objID = eObj.id;
         var parts = new Array();
         parts = objID.split("-");
+        editing_group = $(eObj).hasClass("groups");
+        if(editing_group){
+            oldGroupEvt(parts[0], parts[1], parts[2]);
+            return true;
+        }
         // call the oldEvt function to bring up the event editor
         oldEvt(parts[0], parts[1], parts[2]);
         return true;

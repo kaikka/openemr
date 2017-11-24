@@ -1,2 +1,4 @@
 /vendor/**/.git
 /logs
+.env
+/.idea/*

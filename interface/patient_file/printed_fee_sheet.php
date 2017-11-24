@@ -14,9 +14,13 @@ require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/billing.inc");
-require_once("$srcdir/formatting.inc.php");
 
-function genColumn($ix) {
+use OpenEMR\Services\FacilityService;
+
+$facilityService = new FacilityService();
+
+function genColumn($ix)
+{
     global $html;
     global $SBCODES;
     for ($imax = count($SBCODES); $ix < $imax; ++$ix) {
@@ -25,41 +29,49 @@ function genColumn($ix) {
         if ($cmd == '*C') { // column break
             return++$ix;
         }
+
         if ($cmd == '*B') { // Borderless and empty
             $html .= " <tr><td colspan='5' class='fscode' style='border-width:0 1px 0 0;padding-top:1px;' nowrap>&nbsp;</td></tr>\n";
         } else if ($cmd == '*G') {
             $title = htmlspecialchars($a[1]);
-            if (!$title)
+            if (!$title) {
                 $title = '&nbsp;';
+            }
+
             $html .= " <tr><td colspan='5' align='center' class='fsgroup' style='vertical-align:middle' nowrap>$title</td></tr>\n";
-        }
-        else if ($cmd == '*H') {
+        } else if ($cmd == '*H') {
             $title = htmlspecialchars($a[1]);
-            if (!$title)
+            if (!$title) {
                 $title = '&nbsp;';
+            }
+
             $html .= " <tr><td colspan='5' class='fshead' style='vertical-align:middle' nowrap>$title</td></tr>\n";
-        }
-        else {
+        } else {
             $title = htmlspecialchars($a[1]);
-            if (!$title)
+            if (!$title) {
                 $title = '&nbsp;';
+            }
+
             $b = explode(':', $cmd);
             $html .= " <tr>\n";
             $html .= " <td class='fscode' style='vertical-align:middle;width:14pt' nowrap>&nbsp;</td>\n";
             if (count($b) <= 1) {
                 $code = $b[0];
-                if (!$code)
+                if (!$code) {
                     $code = '&nbsp;';
+                }
+
                 $html .= " <td class='fscode' style='vertical-align:middle' nowrap>$code</td>\n";
                 $html .= " <td colspan='3' class='fscode' style='vertical-align:middle' nowrap>$title</td>\n";
-            }
-            else {
+            } else {
                 $html .= " <td colspan='2' class='fscode' style='vertical-align:middle' nowrap>" . $b[0] . '/' . $b[1] . "</td>\n";
                 $html .= " <td colspan='2' class='fscode' style='vertical-align:middle' nowrap>$title</td>\n";
             }
+
             $html .= " </tr>\n";
         }
     }
+
     return $ix;
 }
 
@@ -85,22 +97,20 @@ if (empty($_GET['fill'])) {
 // Show based on session array or single pid?
 $pid_list = array();
 
-if(!empty($_SESSION['pidList']) and $form_fill == 2)
-{
+if (!empty($_SESSION['pidList']) and $form_fill == 2) {
     $pid_list = $_SESSION['pidList'];
-}
-else if ($form_fill == 1)
-{
-    array_push($pid_list,$pid); //get from active PID
+} else if ($form_fill == 1) {
+    array_push($pid_list, $pid); //get from active PID
 } else {
-    array_push($pid_list,''); // empty element for blank form
+    array_push($pid_list, ''); // empty element for blank form
 }
 
 // This file is optional. You can create it to customize how the printed
 // fee sheet looks, otherwise you'll get a mirror of your actual fee sheet.
 //
-if (file_exists("../../custom/fee_sheet_codes.php"))
-    include_once ("../../custom/fee_sheet_codes.php");
+if (file_exists("../../custom/fee_sheet_codes.php")) {
+    include_once("../../custom/fee_sheet_codes.php");
+}
 
 // TBD: Move these to globals.php, or make them user-specific.
 $fontsize = 7;
@@ -133,6 +143,7 @@ if (empty($SBCODES)) {
             $last_category = $fs_category;
             $SBCODES[] = '*G|' . substr($fs_category, 1);
         }
+
         $SBCODES[] = " |" . substr($fs_option, 1);
     }
 
@@ -159,8 +170,10 @@ if (empty($SBCODES)) {
                 "ORDER BY d.name, dt.selector, dt.drug_id");
         while ($trow = sqlFetchArray($tres)) {
             $tmp = $trow['selector'];
-            if ($trow['name'] !== $trow['selector'])
+            if ($trow['name'] !== $trow['selector']) {
                 $tmp .= ' ' . $trow['name'];
+            }
+
             $prodcode = empty($trow['ndc_number']) ? ('(' . $trow['drug_id'] . ')') :
                     $trow['ndc_number'];
             $SBCODES[] = "$prodcode|$tmp";
@@ -170,8 +183,9 @@ if (empty($SBCODES)) {
     // Extra stuff for the labs section.
     $SBCODES[] = '*G|' . xl('Notes');
     $percol = intval((count($SBCODES) + 2) / 3);
-    while (count($SBCODES) < $percol * 3)
+    while (count($SBCODES) < $percol * 3) {
         $SBCODES[] = '*B|';
+    }
 
     // Adjust lines per page to distribute lines evenly among the pages.
     $pages = intval(($percol + $lines_in_stats + $lines_per_page - 1) / $lines_per_page);
@@ -190,6 +204,7 @@ if (empty($SBCODES)) {
         array_splice($SBCODES, $lines_this_page * 1 + $page_start_index, 0, '*C|');
         $page_start_index += $lines_this_page * 3 + 3;
     }
+
     array_splice($SBCODES, $lines * 2 + $page_start_index, 0, '*C|');
     array_splice($SBCODES, $lines * 1 + $page_start_index, 0, '*C|');
 }
@@ -260,16 +275,26 @@ height: ${header_height}pt;
 margin: 0 0 8pt 0;
 }
 .ftitlecell1 {
-vertical-align: top;
-text-align: left;
-font-size: 14pt;
-font-weight: bold;
+ width: 33%;
+ vertical-align: top;
+ text-align: left;
+ font-size: 14pt;
+ font-weight: bold;
 }
 .ftitlecell2 {
-vertical-align: top;
-text-align: right;
-font-size: 9pt;
+ width: 33%;
+ vertical-align: top;
+ text-align: right;
+ font-size: 9pt;
 }
+.ftitlecellm {
+ width: 34%;
+ vertical-align: top;
+ text-align: center;
+ font-size: 14pt;
+ font-weight: bold;
+}
+
 div.pagebreak {
 page-break-after: always;
 height: ${page_height}pt;
@@ -296,7 +321,7 @@ function printlog_before_print() {
 </script>
 </head>
 <body bgcolor='#ffffff'>
-<form name='theform' method='post' action='printed_fee_sheet.php?fill=$form_fill'
+<form name='theform' method='post' action='printed_fee_sheet.php?fill=" . attr($form_fill) . "'
 onsubmit='return opener.top.restoreSession()'>
 <center>";
 
@@ -312,12 +337,11 @@ $today = date('Y-m-d');
 $alertmsg = ''; // anything here pops up in an alert box
 
 // Get details for the primary facility.
-$frow = sqlQuery("SELECT * FROM facility WHERE primary_business_entity = 1");
+$frow = $facilityService->getPrimaryBusinessEntity();
 
 // If primary is not set try to old method of guessing...for backward compatibility
 if (empty($frow)) {
-    $frow = sqlQuery("SELECT * FROM facility " .
-            "ORDER BY billing_location DESC, accepts_assignment DESC, id LIMIT 1");
+    $frow = $facilityService->getPrimaryBusinessEntity(array("useLegacyImplementation" => true));
 }
 
 // Still missing...
@@ -325,11 +349,18 @@ if (empty($frow)) {
     $alertmsg = xl("No Primary Business Entity selected in facility list");
 }
 
+$logo = '';
+$ma_logo_path = "sites/" . $_SESSION['site_id'] . "/images/ma_logo.png";
+if (is_file("$webserver_root/$ma_logo_path")) {
+    $logo = "<img src='$web_root/$ma_logo_path' style='height:" . round(9 * 5.14) . "pt' />";
+} else {
+    $logo = "<!-- '$ma_logo_path' does not exist. -->";
+}
+
 // Loop on array of PIDS
 $saved_pages = $pages; //Save calculated page count of a single fee sheet
 
 foreach ($pid_list as $pid) {
-
     if ($form_fill) {
         // Get the patient's name and chart number.
         $patdata = getPatientData($pid);
@@ -339,8 +370,7 @@ foreach ($pid_list as $pid) {
     $cindex = 0;
 
     while (--$pages >= 0) {
-
-        $html .= genFacilityTitle(xl('Superbill/Fee Sheet'), -1);
+        $html .= genFacilityTitle(xl('Superbill/Fee Sheet'), -1, $logo);
 
         $html .="
 <table class='bordertbl' cellspacing='0' cellpadding='0' width='100%'>
@@ -373,14 +403,16 @@ foreach ($pid_list as $pid) {
             $html .= xl('DOB', 'r');
             $html .= ":<br />";
 
-            if ($form_fill)
+            if ($form_fill) {
                 $html .= $patdata['DOB'];
+            }
 
             $html .= xl('ID', 'r');
             $html .= ":<br />";
 
-            if ($form_fill)
+            if ($form_fill) {
                 $html .= $patdata['pubpid'];
+            }
 
             $html .= "</td>
 </tr>
@@ -429,8 +461,10 @@ foreach ($pid_list as $pid) {
                             $icobj = new InsuranceCompany($row['provider']);
                             $adobj = $icobj->get_address();
                             $insco_name = trim($icobj->get_name());
-                            if ($instype != 'primary')
+                            if ($instype != 'primary') {
                                 $html .= ",";
+                            }
+
                             if ($insco_name) {
                                 $html .= "&nbsp;$insco_name";
                             } else {
@@ -441,7 +475,7 @@ foreach ($pid_list as $pid) {
                 }
             } else {
                 // IPPF wants a visit date box with the current date in it.
-                $html .= xl('Visit date','r');
+                $html .= xl('Visit date', 'r');
                 $html .= ":<br />\n";
                 if (!empty($encdata)) {
                     $html .= substr($encdata['date'], 0, 10);
@@ -534,19 +568,18 @@ foreach ($pid_list as $pid) {
 </table>";
 
         $html .= "</div>";  //end of div.pageLetter
-
     } // end while
     $pages = $saved_pages; //RESET
 }
 
 // Common End Code
 if ($form_fill != 2) {   //use native browser 'print' for multipage
-$html .= "<div id='hideonprint'>
+    $html .= "<div id='hideonprint'>
 <p>
 <input type='button' value='";
 
-$html .= xla('Print');
-$html .="' id='printbutton' />
+    $html .= xla('Print');
+    $html .="' id='printbutton' />
 </div>";
 }
 
@@ -558,4 +591,3 @@ $html .= "
 
 // Send final result to display
 echo $html;
-?>

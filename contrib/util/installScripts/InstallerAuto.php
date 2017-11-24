@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2010 Brady Miller <brady@sparmy.com>
+// Copyright (C) 2010 Brady Miller <brady.g.miller@gmail.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -8,12 +8,12 @@
 //
 // This script is for automatic installation and ocnfiguration
 //   of OpenEMR.
-// 
+//
 // This script is meant to be run as php command line (php-cli),
 //  and needs to be first activated by removing the 'exit' line
 //  at top (via sed command).
 //
-// To activate script, need to comment out the exit command at top 
+// To activate script, need to comment out the exit command at top
 //   of script.
 //
 // Command ( Note that the ordering and number of custom settings
@@ -100,33 +100,32 @@ $installSettings['no_root_db_access']        = 'BLANK';
 $installSettings['development_translations'] = 'BLANK';
 
 // Collect parameters(if exist) for installation configuration settings
-for ($i=1;$i < count($argv); $i++) {
-  $indexandvalue = explode("=",$argv[$i]);
-  $index = $indexandvalue[0];
-  $value = $indexandvalue[1];
-  $installSettings[$index] = $value;
+for ($i=1; $i < count($argv); $i++) {
+    $indexandvalue = explode("=", $argv[$i]);
+    $index = $indexandvalue[0];
+    $value = $indexandvalue[1];
+    $installSettings[$index] = $value;
 }
 
 // Convert BLANK settings to empty
 $tempInstallSettings = array();
 foreach ($installSettings as $setting => $value) {
-  if ($value == "BLANK") {
-    $value = '';
-  }
-  $tempInstallSettings[$setting] = $value;
+    if ($value == "BLANK") {
+        $value = '';
+    }
+
+    $tempInstallSettings[$setting] = $value;
 }
+
 $installSettings = $tempInstallSettings;
 
 
 // Install and configure OpenEMR using the Installer class
-$installer = new Installer( $installSettings );
-if ( ! $installer->quick_install() ) {
+$installer = new Installer($installSettings);
+if (! $installer->quick_install()) {
   // Failed, report error
-  echo "ERROR: " . $installer->error_message . "\n";
-}
-else {
+    echo "ERROR: " . $installer->error_message . "\n";
+} else {
   // Successful
-  echo $installer->debug_message . "\n";
+    echo $installer->debug_message . "\n";
 }
-
-?>

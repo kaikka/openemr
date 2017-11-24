@@ -16,12 +16,12 @@
  * @package OpenEMR
  * @author  Tony McCormick <tony@mi-squared.com>
  * @author  Kevin Yeh <kevin.y@integralemr.com>
- * @author  Brady Miller <brady@sparmy.com>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
  * @link    http://www.open-emr.org
  */
 
-$fake_register_globals=false;
-$sanitize_all_escapes=true;
+
+
 
 // Set the GET auth parameter to logout.
 //  This parameter is then captured in the auth.inc script (which is included in globals.php script) and does the following:
@@ -30,4 +30,3 @@ $sanitize_all_escapes=true;
 //    3. Redirects user to the login screen (maintains the site id)
 $_GET['auth'] = "logout";
 require_once("globals.php");
-?>

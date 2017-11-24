@@ -1,5 +1,5 @@
 /* ====================================
- * the style sheet for the ajax_template calendar 
+ * the style sheet for the ajax_template calendar
  * ====================================*/
 
 a {
@@ -28,6 +28,7 @@ div.tiny { width:1px; height:1px; font-size:1px; }
     float: right;
     width: 100%;
     border-bottom:1px solid black;
+	padding: 5px 0px 3px 0px; /*RP_ADDED_2017-02-19*/
 }
 #dateNAV {
     float: left;
@@ -185,10 +186,9 @@ div.tiny { width:1px; height:1px; font-size:1px; }
 /* the DIV of times */
 #times {
     border-right: 1px solid #999;
-    width: 2em;
+    width: 1%;
     background-color: #FFF3D1;
     padding: 0px;
-    max-width: 12px;
 }
 #times table {
     border-collapse: collapse;
