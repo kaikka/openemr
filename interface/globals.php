@@ -14,6 +14,9 @@ if ($response !== true) {
 
 // Default values for optional variables that are allowed to be set by callers.
 
+//This is to help debug the ssl mysql connection. This will send messages to php log to show if mysql connections have a cipher set up.
+$GLOBALS['debug_ssl_mysql_connection'] = false;
+
 // Unless specified explicitly, apply Auth functions
 if (!isset($ignoreAuth)) {
     $ignoreAuth = false;
@@ -98,6 +101,13 @@ if (empty($_SESSION['site_id']) || !empty($_GET['site'])) {
         $tmp = $_GET['site'];
     } else {
         if (empty($ignoreAuth)) {
+            // mdsupport - Don't die if logout menu link is called from expired session.
+            // Eliminate this code when close method is available for session management.
+            if ((isset($_GET['auth'])) && ($_GET['auth'] == "logout")) {
+                $GLOBALS['login_screen'] = "login_screen.php";
+                $srcdir = "../library";
+                include_once("$srcdir/auth.inc");
+            }
             die("Site ID is missing from session data!");
         }
 
@@ -346,7 +356,8 @@ if (!empty($glrow)) {
         if ($gl_name == 'language_menu_other') {
             $GLOBALS['language_menu_show'][] = $gl_value;
         } elseif ($gl_name == 'css_header') {
-            $GLOBALS[$gl_name] = $rootdir.'/themes/'.$gl_value.'?v='.$v_js_includes;
+            //Escape css file name using 'attr' for security (prevent XSS).
+            $GLOBALS[$gl_name] = $rootdir.'/themes/'.attr($gl_value).'?v='.$v_js_includes;
             $temp_css_theme_name = $gl_value;
         } elseif ($gl_name == 'weekend_days') {
             $GLOBALS[$gl_name] = explode(',', $gl_value);
@@ -426,7 +437,8 @@ if (!empty($glrow)) {
 
         // Check file existance
         if (file_exists($include_root.'/themes/'.$new_theme)) {
-            $GLOBALS['css_header'] = $rootdir.'/themes/'.$new_theme.'?v='.$v_js_includes;
+            //Escape css file name using 'attr' for security (prevent XSS).
+            $GLOBALS['css_header'] = $rootdir.'/themes/'.attr($new_theme).'?v='.$v_js_includes;
         } else {
             // throw a warning if rtl'ed file does not exist.
             error_log("Missing theme file ".text($include_root).'/themes/'.text($new_theme));

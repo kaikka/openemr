@@ -10,44 +10,46 @@
  * @link    http://www.open-emr.org
  */
 
-    require_once("../../globals.php");
-    require_once("$srcdir/dated_reminder_functions.php");
+require_once("../../globals.php");
+require_once("$srcdir/dated_reminder_functions.php");
 
-  $dateRanges = array();
+use OpenEMR\Core\Header;
+
+$dateRanges = array();
 // $dateranges = array ( number_period => text to display ) == period is always in the singular
 // eg. $dateRanges['4_week'] = '4 Weeks From Now';
-  $dateRanges['1_day'] =  xl('1 Day From Now');
-  $dateRanges['2_day'] = xl('2 Days From Now');
-  $dateRanges['3_day'] = xl('3 Days From Now');
-  $dateRanges['4_day'] = xl('4 Days From Now');
-  $dateRanges['5_day'] = xl('5 Days From Now');
-  $dateRanges['6_day'] = xl('6 Days From Now');
-  $dateRanges['1_week'] = xl('1 Week From Now');
-  $dateRanges['2_week'] = xl('2 Weeks From Now');
-  $dateRanges['3_week'] = xl('3 Weeks From Now');
-  $dateRanges['4_week'] = xl('4 Weeks From Now');
-  $dateRanges['5_week'] = xl('5 Weeks From Now');
-  $dateRanges['6_week'] = xl('6 Weeks From Now');
-  $dateRanges['1_month'] = xl('1 Month From Now');
-  $dateRanges['2_month'] = xl('2 Months From Now');
-  $dateRanges['3_month'] = xl('3 Months From Now');
-  $dateRanges['4_month'] = xl('4 Months From Now');
-  $dateRanges['5_month'] = xl('5 Months From Now');
-  $dateRanges['6_month'] = xl('6 Months From Now');
-  $dateRanges['7_month'] = xl('7 Months From Now');
-  $dateRanges['8_month'] = xl('8 Months From Now');
-  $dateRanges['9_month'] = xl('9 Months From Now');
-  $dateRanges['1_year'] = xl('1 Year From Now');
-  $dateRanges['2_year'] = xl('2 Years From Now');
+$dateRanges['1_day'] =  xl('1 Day From Now');
+$dateRanges['2_day'] = xl('2 Days From Now');
+$dateRanges['3_day'] = xl('3 Days From Now');
+$dateRanges['4_day'] = xl('4 Days From Now');
+$dateRanges['5_day'] = xl('5 Days From Now');
+$dateRanges['6_day'] = xl('6 Days From Now');
+$dateRanges['1_week'] = xl('1 Week From Now');
+$dateRanges['2_week'] = xl('2 Weeks From Now');
+$dateRanges['3_week'] = xl('3 Weeks From Now');
+$dateRanges['4_week'] = xl('4 Weeks From Now');
+$dateRanges['5_week'] = xl('5 Weeks From Now');
+$dateRanges['6_week'] = xl('6 Weeks From Now');
+$dateRanges['1_month'] = xl('1 Month From Now');
+$dateRanges['2_month'] = xl('2 Months From Now');
+$dateRanges['3_month'] = xl('3 Months From Now');
+$dateRanges['4_month'] = xl('4 Months From Now');
+$dateRanges['5_month'] = xl('5 Months From Now');
+$dateRanges['6_month'] = xl('6 Months From Now');
+$dateRanges['7_month'] = xl('7 Months From Now');
+$dateRanges['8_month'] = xl('8 Months From Now');
+$dateRanges['9_month'] = xl('9 Months From Now');
+$dateRanges['1_year'] = xl('1 Year From Now');
+$dateRanges['2_year'] = xl('2 Years From Now');
 
 // --- need to add a check to ensure the post is being sent from the correct location ???
 
 // default values for $this_message
-    $this_message = array('message'=>'','message_priority'=>3,'dueDate'=>'');
-    $forwarding = false;
+$this_message = array('message'=>'','message_priority'=>3,'dueDate'=>'');
+$forwarding = false;
 
 // default values for Max words to input in a reminder
-  $max_reminder_words=160;
+$max_reminder_words=160;
 
 // ---------------- FOR FORWARDING MESSAGES ------------->
 if (isset($_GET['mID']) and is_numeric($_GET['mID'])) {
@@ -81,7 +83,7 @@ if ($_POST) {
 // ------- check priority, only allow 1-3
     isset($_POST['priority']) and intval($_POST['priority']) <= 3 and
 // ------- check message, only up to 160 characters limited by Db
-    isset($_POST['message']) and strlen($_POST['message']) <= $max_reminder_words and strlen($_POST['message']) > 0 and
+    isset($_POST['message']) and mb_strlen($_POST['message']) <= $max_reminder_words and mb_strlen($_POST['message']) > 0 and
 // ------- check if PatientID is set and in numeric
     isset($_POST['PatientID']) and is_numeric($_POST['PatientID'])
     ) {
@@ -112,7 +114,7 @@ if ($_POST) {
       // ------------ 2) communicate with user
             echo '   alert("'.addslashes(xl('Reminder Sent')).'");';
       // ------------ 3) close this window
-            echo '  window.close();';
+            echo '  dlgclose();';
             echo '</script></body></html>';
       // --------- stop script from executing further
             exit;
@@ -141,17 +143,11 @@ if (isset($this_message['pid'])) {
     ?>
 <html>
   <head>
+
     <title><?php echo xlt('Send a Reminder') ?></title>
 
-    <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
+    <?php Header::setupHeader(['datetime-picker','opener','topdialog','common']); ?>
 
-    <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js?v=<?php echo $v_js_includes; ?>"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/topdialog.js?v=<?php echo $v_js_includes; ?>"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js?v=<?php echo $v_js_includes; ?>"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
     <script language="JavaScript">
       $(document).ready(function (){
 
@@ -250,7 +246,7 @@ if (isset($this_message['pid'])) {
       })
 
         function sel_patient(){
-           window.open('../../main/calendar/find_patient_popup.php', '_newDRPat', '' + ",width="   + 500 + ",height="  + 400 + ",left="    + 25  + ",top="     + 25   + ",screenX=" + 25  + ",screenY=" + 25);
+           dlgopen('../../main/calendar/find_patient_popup.php', '_newDRPat', 650, 400, '', '');
         }
 
         function setpatient(pid, lname, fname, dob){
@@ -279,7 +275,7 @@ if (isset($this_message['pid'])) {
 <div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>
 
 
-    <h1><?php echo xlt('Send a Reminder') ?></h1>
+    <h4><?php echo xlt('Send a Reminder') ?></h4>
     <form id="addDR" style="margin:0 0 10px 0;" id="newMessage" method="post" onsubmit="return top.restoreSession()">
      <div style="text-align:center; color:red" id="errorMessage"></div>
 
@@ -391,7 +387,7 @@ if (isset($this_message['pid'])) {
         $remindersArray[$RA['messageID']]['dDate'] = $RA['dDate'];
     }
 
-        echo '<h2>',xlt('Messages You have sent Today'),'</h2>';
+        echo '<h4>',xlt('Messages You have sent Today'),'</h4>';
         echo '<table border="1" width="100%" cellpadding="5px" id="logTable">
                 <thead>
                   <tr>

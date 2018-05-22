@@ -1,9 +1,21 @@
 <?php
+/**
+ * facilities_add.php
+ *
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
+
+
 require_once("../globals.php");
 require_once("../../library/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/erx_javascript.inc.php");
 
+use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
@@ -12,13 +24,7 @@ $alertmsg = '';
 ?>
 <html>
 <head>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/js/fancybox/jquery.fancybox-1.2.6.css" media="screen" />
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-1-7-2/index.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/fancybox/jquery.fancybox-1.2.6.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-ui.js"></script>
+    <?php Header::setupHeader(['opener', 'jquery-ui']); ?>
 <script type="text/javascript" src="../main/calendar/modules/PostCalendar/pnincludes/AnchorPosition.js"></script>
 <script type="text/javascript" src="../main/calendar/modules/PostCalendar/pnincludes/PopupWindow.js"></script>
 <script type="text/javascript" src="../main/calendar/modules/PostCalendar/pnincludes/ColorPicker2.js"></script>
@@ -43,7 +49,7 @@ if (isset($_POST["mode"]) && $_POST["mode"] == "facility") {
     echo '
 <script type="text/javascript">
 <!--
-parent.$.fn.fancybox.close();
+dlgclose();
 //-->
 </script>
 
@@ -95,7 +101,19 @@ function submitform() {
     <?php } ?>
 
     top.restoreSession();
-    document.forms[0].submit();
+
+    let post_url = $("#facility-add").attr("action");
+    let request_method = $("#facility-add").attr("method");
+    let form_data = $("#facility-add").serialize();
+
+    $.ajax({
+        url: post_url,
+        type: request_method,
+        data: form_data
+    }).done(function (r) { //
+        dlgclose('refreshme', false);
+    });
+    return false;
 }
 
 function toggle( target, div ) {
@@ -117,32 +135,11 @@ $(document).ready(function(){
         toggle( $(this), "#DEM" );
     });
 
-    // fancy box
-    enable_modals();
-
-    tabbify();
-
-    // special size for
-    $(".large_modal").fancybox( {
-        'overlayOpacity' : 0.0,
-        'showCloseButton' : true,
-        'frameHeight' : 600,
-        'frameWidth' : 1000
-    });
-
-    // special size for
-    $(".medium_modal").fancybox( {
-        'overlayOpacity' : 0.0,
-        'showCloseButton' : true,
-        'frameHeight' : 260,
-        'frameWidth' : 510
-    });
-
 });
 
 $(document).ready(function(){
     $("#cancel").click(function() {
-          parent.$.fn.fancybox.close();
+          dlgclose();
      });
 
     /**
@@ -192,7 +189,7 @@ function displayAlert()
 
 <br>
 
-<form name='facility-add' id='facility-add' method='post' action="facilities.php" target='_parent'>
+<form name='facility-add' id='facility-add' method='post' action="facilities.php">
     <input type=hidden name=mode value="facility">
     <table border=0 cellpadding=0 cellspacing=0>
         <tr>
@@ -222,6 +219,10 @@ function displayAlert()
         </span></td><td><input type=entry size=20 name=facility_npi value=""></td>
         </tr>
         <tr>
+            <td>&nbsp;</td><td>&nbsp;</td><td width="20"></td><td><span class=text><?php (xl('Facility Taxonomy', 'e')); ?>:</span></td>
+            <td><input type=entry size=20 name=facility_taxonomy value=""></td>
+        </tr>
+        <tr>
         <td><span class="text"><?php xl('Website', 'e'); ?>: </span></td><td><input type=entry size=20 name=website value=""></td>
         <td>&nbsp;</td>
         <td><span class="text"><?php xl('Email', 'e'); ?>: </span></td><td><input type=entry size=20 name=email value=""></td>
@@ -240,7 +241,7 @@ function displayAlert()
     <?php
     $disabled='';
     $resPBE = $facilityService->getPrimaryBusinessEntity(array("excludedId" => $my_fid));
-    if (sizeof($resPBE)>0) {
+    if (!empty($resPBE) && sizeof($resPBE)>0) {
         $disabled='disabled';
     }
     ?>

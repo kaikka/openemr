@@ -3,6 +3,7 @@ require_once("../globals.php");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/erx_javascript.inc.php");
 
+use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
@@ -19,7 +20,7 @@ if (isset($_POST["mode"]) && $_POST["mode"] == "facility") {
     echo '
 <script type="text/javascript">
 <!--
-parent.$.fn.fancybox.close();
+dlgclose();
 //-->
 </script>
 
@@ -28,13 +29,8 @@ parent.$.fn.fancybox.close();
 ?>
 <html>
 <head>
+    <?php Header::setupHeader(['opener', 'jquery-ui']); ?>
 
-    <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-    <link rel="stylesheet" type="text/css" href="../../library/js/fancybox/jquery.fancybox-1.2.6.css" media="screen" />
-    <script type="text/javascript" src="../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-1-9-1/index.js"></script>
-    <script type="text/javascript" src="../../library/js/common.js"></script>
-    <script type="text/javascript" src="../../library/js/fancybox/jquery.fancybox-1.2.6.js"></script>
     <script type="text/javascript" src="../main/calendar/modules/PostCalendar/pnincludes/AnchorPosition.js"></script>
     <script type="text/javascript" src="../main/calendar/modules/PostCalendar/pnincludes/PopupWindow.js"></script>
     <script type="text/javascript" src="../main/calendar/modules/PostCalendar/pnincludes/ColorPicker2.js"></script>
@@ -68,46 +64,52 @@ parent.$.fn.fancybox.close();
             if (!valid) return;
 
             <?php if ($GLOBALS['erx_enable']) { ?>
-            alertMsg='';
-            f=document.forms[0];
-            for(i=0;i<f.length;i++){
-                if(f[i].type=='text' && f[i].value)
-                {
-                    if(f[i].name == 'facility' || f[i].name == 'Washington')
-                    {
-                        alertMsg += checkLength(f[i].name,f[i].value,35);
-                        alertMsg += checkFacilityName(f[i].name,f[i].value);
+            alertMsg = '';
+            f = document.forms[0];
+            for (i = 0; i < f.length; i++) {
+                if (f[i].type == 'text' && f[i].value) {
+                    if (f[i].name == 'facility' || f[i].name == 'Washington') {
+                        alertMsg += checkLength(f[i].name, f[i].value, 35);
+                        alertMsg += checkFacilityName(f[i].name, f[i].value);
                     }
-                    else if(f[i].name == 'street')
-                    {
-                        alertMsg += checkLength(f[i].name,f[i].value,35);
-                        alertMsg += checkAlphaNumeric(f[i].name,f[i].value);
+                    else if (f[i].name == 'street') {
+                        alertMsg += checkLength(f[i].name, f[i].value, 35);
+                        alertMsg += checkAlphaNumeric(f[i].name, f[i].value);
                     }
-                    else if(f[i].name == 'phone' || f[i].name == 'fax')
-                    {
-                        alertMsg += checkPhone(f[i].name,f[i].value);
+                    else if (f[i].name == 'phone' || f[i].name == 'fax') {
+                        alertMsg += checkPhone(f[i].name, f[i].value);
                     }
-                    else if(f[i].name == 'federal_ein')
-                    {
-                        alertMsg += checkLength(f[i].name,f[i].value,10);
-                        alertMsg += checkFederalEin(f[i].name,f[i].value);
+                    else if (f[i].name == 'federal_ein') {
+                        alertMsg += checkLength(f[i].name, f[i].value, 10);
+                        alertMsg += checkFederalEin(f[i].name, f[i].value);
                     }
                 }
             }
-            if(alertMsg)
-            {
+            if (alertMsg) {
                 alert(alertMsg);
                 return false;
             }
             <?php } ?>
 
             top.restoreSession();
-            document.forms[0].submit();
+
+            let post_url = $("#facility-form").attr("action");
+            let request_method = $("#facility-form").attr("method");
+            let form_data = $("#facility-form").serialize();
+
+            $.ajax({
+                url: post_url,
+                type: request_method,
+                data: form_data
+            }).done(function (r) { //
+                dlgclose('refreshme', false);
+            });
+            return false;
         }
 
         $(document).ready(function(){
             $("#cancel").click(function() {
-                parent.$.fn.fancybox.close();
+                dlgclose();
             });
 
             /**
@@ -133,9 +135,9 @@ parent.$.fn.fancybox.close();
         function displayAlert()
         {
             if(document.getElementById('primary_business_entity').checked==false)
-                alert("<?php echo addslashes(xl('Primary Business Entity tax id is used as account id for NewCrop ePrescription. Changing the facility will affect the working in NewCrop.'));?>");
+                alert("<?php echo addslashes(xl('Primary Business Entity tax id is used as the account id for NewCrop ePrescription.'));?>");
             else if(document.getElementById('primary_business_entity').checked==true)
-                alert("<?php echo addslashes(xl('Once the Primary Business Facility is set, it should not be changed. Changing the facility will affect the working in NewCrop ePrescription.'));?>");
+                alert("<?php echo addslashes(xl('Once the Primary Business Facility is set, changing the facility id will affect NewCrop ePrescription.'));?>");
         }
     </script>
 
@@ -156,7 +158,7 @@ parent.$.fn.fancybox.close();
     </tr>
 </table>
 
-<form name='facility-form' id="facility-form" method='post' action="facilities.php" target="_parent">
+<form name='facility-form' id="facility-form" method='post' action="facilities.php">
     <input type=hidden name=mode value="facility">
     <input type=hidden name=newmode value="admin_facility"> <!--    Diffrentiate Admin and add post backs -->
     <input type=hidden name=fid value="<?php echo $my_fid;?>">
@@ -199,7 +201,13 @@ parent.$.fn.fancybox.close();
           </span></td><td><input type=entry size=20 name=facility_npi value="<?php echo htmlspecialchars($facility["facility_npi"], ENT_QUOTES) ?>"></td>
         </tr>
         <tr>
-            <td><span class=text><?php xl('Website', 'e'); ?>: </span></td><td><input type=entry size=20 name=website value="<?php echo htmlspecialchars($facility["website"], ENT_QUOTES) ?>"></td>
+            <td>&nbsp;</td><td>&nbsp;</td><td><span class=text><?php (xl('Facility Taxonomy', 'e')); ?>:</span></td>
+            <td><input type=entry size=20 name=facility_taxonomy value="<?php echo htmlspecialchars($facility["facility_taxonomy"], ENT_QUOTES) ?>"></td>
+        </tr>
+
+
+        <tr>
+        <td><span class=text><?php xl('Website', 'e'); ?>: </span></td><td><input type=entry size=20 name=website value="<?php echo htmlspecialchars($facility["website"], ENT_QUOTES) ?>"></td>
             <td><span class=text><?php xl('Email', 'e'); ?>: </span></td><td><input type=entry size=20 name=email value="<?php echo htmlspecialchars($facility["email"], ENT_QUOTES) ?>"></td>
         </tr>
 
@@ -223,7 +231,7 @@ parent.$.fn.fancybox.close();
         <?php
         $disabled='';
         $resPBE = $facilityService->getPrimaryBusinessEntity(array("excludedId" => $my_fid));
-        if (sizeof($resPBE)>0) {
+        if ($resPBE) {
             $disabled='disabled';
         }
         ?>

@@ -50,9 +50,6 @@ if (! isset($_POST['pass']) || empty($_POST['pass'])) {
     exit();
 }
 
-require_once(dirname(__FILE__) . "/lib/appsql.class.php");
-$logit = new ApplicationTable();
-
 // set the language
 if (! empty($_POST['languageChoice'])) {
     $_SESSION['language_choice'] = (int) $_POST['languageChoice'];
@@ -69,6 +66,8 @@ $ignoreAuth = 1;
 
 // Authentication
 require_once('../interface/globals.php');
+require_once(dirname(__FILE__) . "/lib/appsql.class.php");
+$logit = new ApplicationTable();
 require_once("$srcdir/authentication/common_operations.php");
 require_once("$srcdir/user.inc");
 $password_update = isset($_SESSION['password_update']);
@@ -226,6 +225,8 @@ if ($userData = sqlQuery($sql, array(
     header('Location: ' . $landingpage . '&w');
     exit();
 }
-
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Cache-Control: no-cache");
+header("Pragma: no-cache");
 header('Location: ./home.php');
 exit();

@@ -6,27 +6,17 @@
  * session variables, because the session_write_close() function
  * is typically called before utilizing these functions.
  *
- * Copyright (C) 2010-2012 Brady Miller <brady.g.miller@gmail.com>
- * Copyright (C) 2011      Medical Information Integration, LLC
- * Copyright (C) 2011      Ensofttek, LLC
- *
- * LICENSE: This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
- *
- * @package OpenEMR
- * @author  Brady Miller <brady.g.miller@gmail.com>
- * @author  Medical Information Integration, LLC
- * @author  Ensofttek, LLC
- * @link    http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @author    Medical Information Integration, LLC
+ * @author    Ensofttek, LLC
+ * @copyright Copyright (c) 2010-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2011 Medical Information Integration, LLC
+ * @copyright Copyright (c) 2011 Ensofttek, LLC
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
 
 require_once(dirname(__FILE__) . "/patient.inc");
 require_once(dirname(__FILE__) . "/forms.inc");
@@ -130,17 +120,17 @@ function clinical_summary_widget($patient_id, $mode, $dateTarget = '', $organize
             // Start link for reminders that use the custom rules input screen
             $url = "../rules/patient_data.php?category=".htmlspecialchars($action['category'], ENT_QUOTES);
             $url .= "&item=".htmlspecialchars($action['item'], ENT_QUOTES);
-            echo "<a href='".$url."' class='iframe medium_modal' onclick='top.restoreSession()'>";
+            echo "<a href='".$url."' class='medium_modal' onclick='return top.restoreSession()'>";
         } else if ($action['clin_rem_link']) {
             // Start link for reminders that use the custom rules input screen
             $pieces_url = parse_url($action['clin_rem_link']);
             $url_prefix = $pieces_url['scheme'];
             if ($url_prefix == 'https' || $url_prefix == 'http') {
                 echo "<a href='" . $action['clin_rem_link'] .
-                "' class='iframe  medium_modal' onclick='top.restoreSession()'>";
+                "' class='medium_modal' onclick='return top.restoreSession()'>";
             } else {
                 echo "<a href='../../../" . $action['clin_rem_link'] .
-                "' class='iframe  medium_modal' onclick='top.restoreSession()'>";
+                "' class='medium_modal' onclick='return top.restoreSession()'>";
             }
         } else {
             // continue since no link is needed
@@ -496,13 +486,13 @@ function test_rules_clinic_batch_method($provider = '', $type = '', $dateTarget 
   // Prepare the database to track/store results
     $fields = array('provider'=>$provider,'mode'=>$mode,'plan'=>$plan,'organize_mode'=>$organize_mode,'pat_prov_rel'=>$pat_prov_rel);
     if (is_array($dateTarget)) {
-        $fields = array_merge($fields, array(date_target=>$dateTarget['dateTarget']));
-        $fields = array_merge($fields, array(date_begin=>$dateTarget['dateBegin']));
+        $fields = array_merge($fields, array('date_target'=>$dateTarget['dateTarget']));
+        $fields = array_merge($fields, array('date_begin'=>$dateTarget['dateBegin']));
     } else {
         if (empty($dateTarget)) {
-            $fields = array_merge($fields, array(date_target=>date("Y-m-d H:i:s")));
+            $fields = array_merge($fields, array('date_target'=>date("Y-m-d H:i:s")));
         } else {
-            $fields = array_merge($fields, array(date_target=>$dateTarget));
+            $fields = array_merge($fields, array('date_target'=>$dateTarget));
         }
     }
 
@@ -2206,7 +2196,7 @@ function exist_lists_item($patient_id, $type, $value, $dateTarget)
     } else { // count($value_array) == 1
         // Search the title column in lists table
         //   Yes, this is essentially the same as the code type listed as CUSTOM above. This provides flexibility and will ensure compatibility.
-        
+
         // Check for '**'
         if (substr($value, -2)=='**') {
             $sqloper = " LIKE CONCAT('%',?,'%') ";
@@ -2214,7 +2204,7 @@ function exist_lists_item($patient_id, $type, $value, $dateTarget)
         } else {
             $sqloper = "=?";
         }
-    
+
         $response = sqlQueryCdrEngine("SELECT * FROM `lists` " .
         "WHERE `type`=? " .
         "AND `pid`=? " .

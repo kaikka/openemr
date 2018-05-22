@@ -111,6 +111,7 @@ $usrval = json_encode(array ( $cb_top_chk, $cb_bot_chk ));
 $primary_docs = array(
 'cal' => array(xl('Calendar')  , 0, 'main/main_info.php'),
 'pfb' => array(xl('Patient Flow Board')  , 0, '../interface/patient_tracker/patient_tracker.php?skip_timeout_reset=1'),
+'rcb' => array(xl('Recall Board')  , 0, '../interface/main/messages/messages.php?go=Recalls'),
 'app' => array(xl('Portal Activity')  , 0, '../myportal/index.php'),
 'aop' => array(xl('Portal Dashboard')  , 0, '../portal/patient/provider'),
 'msg' => array(xl('Messages')  , 0, 'main/messages/messages.php?form_active=1'),
@@ -231,7 +232,8 @@ function genTreeLink($frame, $name, $title, $mono = false)
             $primary_docs[$name][2] . "')\">" . $title . ($name == 'msg' ? ' <span id="reminderCountSpan" class="bold"></span>' : '')."</a></li>";
     }
 }
-function genMiscLink($frame, $name, $level, $title, $url, $mono = false)
+
+function genMiscLink($frame, $name, $level, $title, $url, $mono = false, $encform = false)
 {
     global $disallowed;
     if (empty($disallowed[$name])) {
@@ -244,11 +246,16 @@ function genMiscLink($frame, $name, $level, $title, $url, $mono = false)
                 echo "forceSpec(false,true);";
             }
         }
-
-        echo "return loadFrame2('$id','$frame','" .
-            $url . "')\">" . $title . "</a></li>";
+        if ($encform) {
+            // In this case $url is an encounter form name, not a URL.
+            echo "loadNewForm('" . addslashes(trim($url)) . "', '" . addslashes(trim($title)) . "');";
+        } else {
+            echo "loadFrame2('$id','$frame','" . $url . "');";
+        }
+        echo "return false;\">" . text($title) . "</a></li>";
     }
 }
+
 function genMiscLink2($frame, $name, $level, $title, $url, $mono = false, $mouseovertext = "")
 {
     global $disallowed;
@@ -377,60 +384,67 @@ function genFindBlock()
 <?php
 } // End function genFindBlock()
 ?>
+<!DOCTYPE html>
 <html>
 <head>
 <title>Navigation</title>
-
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap-3-3-4/dist/css/bootstrap.min.css">
+<?php if ($_SESSION['language_direction'] == 'rtl') { ?>
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-rtl-3-3-4/dist/css/bootstrap-rtl.min.css">
+<?php } ?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'];?>/font-awesome-4-6-3/css/font-awesome.css" type="text/css">
 <style type="text/css">
- body {
-  font-size:8pt;
-  font-weight:normal;
-  padding: 5px 3px 5px 3px;
- }
- .smalltext {
-  font-family:sans-serif;
-  font-size:8pt;
-  font-weight:normal;
- }
- a.navitem, a.navitem:visited {
-  color:#0000ff;
-  font-family:sans-serif;
-  font-size:8pt;
-  font-weight:bold;
- }
-.inputtext {
- font-size:9pt;
- font-weight:normal;
- border-style:solid;
- border-width:1px;
- padding-left:2px;
- padding-right:2px;
- border-color: #000000;
- background-color:transparent;
-}
+    html {
+        font-size: 1em;
+    }
+    body {
+        font-size:8pt;
+        font-weight:normal;
+        padding: 5px 3px 5px 3px;
+    }
+    .smalltext {
+        font-family:sans-serif;
+        font-size:8pt;
+        font-weight:normal;
+    }
+    a.navitem, a.navitem:visited {
+        color:#0000ff;
+        font-family:sans-serif;
+        font-size:8pt;
+        font-weight:bold;
+    }
+    .inputtext {
+        font-size:9pt;
+        font-weight:normal;
+        border-style:solid;
+        border-width:1px;
+        padding-left:2px;
+        padding-right:2px;
+        border-color: #000000;
+        background-color:transparent;
+    }
 
-#navigation ul {
- background-color:transparent;
-}
-#navigation-slide ul {
- background-color:transparent;
-}
-#navigation-slide a{
- width: 92%;
-}
-.nav-menu-img{
-  width:25px;
-  height:25px;
-  border:none;
-  margin-right:5px;
-  vertical-align:middle;
-}
+    #navigation ul {
+        background-color:transparent;
+    }
+    #navigation-slide ul {
+        background-color:transparent;
+    }
+    #navigation-slide a{
+        width: 92%;
+    }
+    .nav-menu-img{
+        width:25px;
+        height:25px;
+        border:none;
+        margin-right:5px;
+        vertical-align:middle;
+    }
 </style>
-
 <link rel="stylesheet" href="../../library/js/jquery.treeview-1.4.1/jquery.treeview.css" />
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-9-1/index.js"></script>
+<script src="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap-3-3-4/dist/js/bootstrap.min.js" type="text/javascript"></script>
 <script type="text/javascript" src="../../library/js/jquery.treeview-1.4.1/jquery.treeview.js" ></script>
 
 <script type="text/javascript" src="../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
@@ -552,6 +566,21 @@ function genFindBlock()
   if (frame == 'RTop') topName = fname; else botName = fname;
   return false;
  }
+
+// Special handling to load a new encounter form into an existing encounter.
+function loadNewForm(formname, formdesc) {
+  var url = '<?php echo "$rootdir/patient_file/encounter/load_form.php?formname=" ?>' + formname;
+  if (parent.RBot.twAddFrameTab) {
+    parent.RBot.twAddFrameTab('enctabs', formdesc, url);
+  }
+  else if (parent.RTop.twAddFrameTab) {
+    parent.RTop.twAddFrameTab('enctabs', formdesc, url);
+  }
+  else {
+    loadFrame2('enc2','RBot','patient_file/encounter/encounter_top.php' +
+      '?formname=' + formname + '&formdesc=' + formdesc);
+  }
+}
 
  // Make sure the the top and bottom frames are open or closed, as specified.
  function forceSpec(istop, isbot) {
@@ -1055,6 +1084,7 @@ $(document).ready(function(){
     });
     $("#navigation-slide > li  > a#cal0").prepend('<i class="fa fa-fw fa-calendar fa-2x"></i>&nbsp;');
     $("#navigation-slide > li  > a#pfb0").prepend('<i class="fa fa-fw fa-list-alt fa-2x"></i>&nbsp;');
+    $("#navigation-slide > li  > a#rcb0").prepend('<i class="fa fa-fw fa-calendar-minus-o fa-2x"></i>&nbsp;');
     $("#navigation-slide > li  > a#msg0").prepend('<i class="fa fa-fw fa-envelope-o fa-2x"></i>&nbsp;');
     $("#navigation-slide > li  > a#app0").prepend('<i class="fa fa-fw fa-user fa-2x"></i>&nbsp;');
     $("#navigation-slide > li  > a#aop0").prepend('<i class="fa fa-fw fa-tachometer fa-2x"></i>&nbsp;');
@@ -1138,7 +1168,9 @@ if (!$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
 if (!$GLOBALS['disable_pat_trkr'] && !$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
     genTreeLink('RTop', 'pfb', xl('Flow Board'));
 }
-
+if (!$GLOBALS['disable_rcb'] && !$GLOBALS['disable_calendar'] && acl_check('patients', 'appt')) {
+    genTreeLink('RBot', 'rcb', xl('Recall Board'));
+}
 if (acl_check('patients', 'notes')) {
     genTreeLink('RBot', 'msg', xl('Messages'));
 }
@@ -1228,10 +1260,12 @@ foreach ($regrows as $entry) {
     }
     genMiscLink(
         'RBot',
-        'cod',
+        'enc',
         '2',
         xl_form_title($title),
-        "patient_file/encounter/load_form.php?formname=" . urlencode($option_id)
+        $option_id,
+        false,
+        true
     );
 }
 if ($reglastcat) {
@@ -1275,7 +1309,7 @@ if ($reglastcat) {
   <li><a class="collapsed" id="feeimg" ><span><?php xl('Fees', 'e') ?></span></a>
     <ul>
         <?php if (acl_check('encounters', 'coding')) {
-            genMiscLink('RBot', 'cod', '2', xl('Fee Sheet'), 'patient_file/encounter/load_form.php?formname=fee_sheet');
+            genMiscLink('RBot', 'cod', '2', xl('Fee Sheet'), 'fee_sheet', false, true);
 } ?>
         <?php if ($GLOBALS['use_charges_panel'] && acl_check('encounters', 'coding')) {
             genTreeLink('RBot', 'cod', xl('Charges'));
@@ -1305,7 +1339,12 @@ if ($reglastcat) {
     <?php  if (acl_check('menus', 'modle')) {?>
    <li><a class="collapsed" id="modimg" ><span><?php echo xlt('Modules') ?></span></a>
     <ul>
-    <?php genMiscLink('RTop', 'adm', '0', xl('Manage Modules'), 'modules/zend_modules/public/Installer'); ?>
+    <?php
+    if (acl_check('admin', 'manage_modules')) {
+        genMiscLink('RTop', 'adm', '0', xl('Manage Modules'), 'modules/zend_modules/public/Installer');
+    }
+    ?>
+
         <?php //genTreeLink('RTop','ort',xl('Settings')); ?>
         <?php
         $module_query = sqlStatement("select mod_id, mod_directory,mod_name,mod_nick_name,mod_relative_link,type from modules where mod_active = 1 AND sql_run= 1 order by mod_ui_order asc");

@@ -205,12 +205,7 @@ document.deletefrm.submit();
 }
 // Java script function for closing the popup
 function popup_close() {
-    if(parent.$.fn.fancybox === undefined) {
-        window.close();
-     }
-     else {
-        parent.$.fn.fancybox.close();
-     }
+    dlgclose();
 }
 </script>
 </head>
@@ -292,7 +287,7 @@ if ($_POST['form_submit']) {
         row_delete("issue_encounter", "list_id = '" . add_escape_custom($issue) ."'");
         row_delete("lists", "id = '" . add_escape_custom($issue) ."'");
     } else if ($document) {
-        if (!acl_check('admin', 'super')) {
+        if (!acl_check('patients', 'docs_rm')) {
             die("Not authorized!");
         }
 
@@ -415,19 +410,20 @@ if ($_POST['form_submit']) {
     }
 
   // Close this window and tell our opener that it's done.
-  //
+  // Not sure yet if the callback can be used universally.
     echo "<script language='JavaScript'>\n";
-    if ($info_msg) {
-        echo " alert('" . addslashes($info_msg) . "');\n";
-    }
-
-    if ($encounterid) { //this code need to be same as 'parent.imdeleted($encounterid)' when the popup is div like
-        echo "window.opener.imdeleted('" . attr($encounterid) . "');\n";
+    if (!$encounterid) {
+        if ($info_msg) {
+            echo " alert('" . addslashes($info_msg) . "');\n";
+        }
+        echo " dlgclose('imdeleted',false);\n";
     } else {
-        echo " if (opener && opener.imdeleted) opener.imdeleted(); else parent.imdeleted();\n";
+        if ($GLOBALS['sql_string_no_show_screen']) {
+            echo " dlgclose('imdeleted', $encounterid);\n";
+        } else { // this allows dialog to stay open then close with button or X.
+            echo " opener.dlgSetCallBack('imdeleted', $encounterid);\n";
+        }
     }
-
-    echo " window.close();\n";
     echo "</script></body></html>\n";
     exit();
 }

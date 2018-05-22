@@ -89,15 +89,16 @@ if ($is_expired) {
 
     $frame1target = "cal";
 } else {
-  // standard layout
-    if ($GLOBALS['default_top_pane']) {
-        $frame1url=attr($GLOBALS['default_top_pane']);
-        $map_paths_to_targets = array(
+    // standard layout
+    $map_paths_to_targets = array(
         'main_info.php' => ('cal'),
         '../new/new.php' => ('pat'),
         '../../interface/main/finder/dynamic_finder.php' => ('pat'),
-        '../../interface/patient_tracker/patient_tracker.php?skip_timeout_reset=1' => ('flb')
-        );
+        '../../interface/patient_tracker/patient_tracker.php?skip_timeout_reset=1' => ('flb'),
+        '../../interface/main/messages/messages.php?form_active=1' => ('msg')
+    );
+    if ($GLOBALS['default_top_pane']) {
+        $frame1url=attr($GLOBALS['default_top_pane']);
         $frame1target = $map_paths_to_targets[$GLOBALS['default_top_pane']];
         if (empty($frame1target)) {
             $frame1target = "msc";
@@ -105,6 +106,16 @@ if ($is_expired) {
     } else {
         $frame1url = "main_info.php";
         $frame1target = "cal";
+    }
+    if ($GLOBALS['default_second_tab']) {
+        $frame2url=attr($GLOBALS['default_second_tab']);
+        $frame2target = $map_paths_to_targets[$GLOBALS['default_second_tab']];
+        if (empty($frame2target)) {
+            $frame2target = "msc";
+        }
+    } else {
+        $frame2url = "../../interface/main/messages/messages.php?form_active=1";
+        $frame2target = "msg";
     }
 }
 
@@ -118,6 +129,8 @@ if (!empty($GLOBALS['gbl_nav_area_width'])) {
 if ($GLOBALS['new_tabs_layout']) {
     $_SESSION['frame1url'] = $frame1url;
     $_SESSION['frame1target'] = $frame1target;
+    $_SESSION['frame2url'] = $frame2url;
+    $_SESSION['frame2target'] = $frame2target;
   // mdsupport - Apps processing invoked for valid app selections from list
     if ((isset($_POST['appChoice'])) && ($_POST['appChoice'] !== '*OpenEMR')) {
         $_SESSION['app1'] = $_POST['appChoice'];
@@ -135,6 +148,7 @@ if ($GLOBALS['new_tabs_layout']) {
 </title>
 <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-9-1/index.js"></script>
 <script type="text/javascript" src="../../library/topdialog.js"></script>
+    <script type="text/javascript" src="tabs/js/dialog_utils.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <link rel="shortcut icon" href="<?php echo $GLOBALS['images_static_relative']; ?>/favicon.ico" />
 
@@ -142,6 +156,9 @@ if ($GLOBALS['new_tabs_layout']) {
 
 // Flag that tab mode is off
 var tab_mode=false;
+
+var webroot_url = '<?php echo $GLOBALS['web_root']; ?>';
+var jsLanguageDirection = "<?php echo $_SESSION["language_direction"]; ?>";
 
 <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
 

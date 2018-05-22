@@ -17,8 +17,10 @@
  // permits selection of one of them via the same set_insurance()
  // function.
 
- include_once("../globals.php");
- include_once("$srcdir/acl.inc");
+ require_once("../globals.php");
+ require_once("$srcdir/acl.inc");
+
+ use OpenEMR\Core\Header;
 
  // Putting a message here will cause a popup window to display it.
  $info_msg = "";
@@ -58,7 +60,8 @@
 <html>
 <head>
 <title><?php xl('Insurance Company Search/Add', 'e');?></title>
-<link rel="stylesheet" href='<?php  echo $css_header ?>' type='text/css'>
+
+<?php Header::setupHeader(['opener','topdialog']); ?>
 
 <style>
 td { font-size:10pt; }
@@ -73,10 +76,6 @@ td { font-size:10pt; }
 }
 
 </style>
-
-<script type="text/javascript" src="../../library/topdialog.js"></script>
-<script type="text/javascript" src="../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-3-2/index.js"></script>
 
 <script language="JavaScript">
 
@@ -105,7 +104,7 @@ td { font-size:10pt; }
    '&form_cms_id=' + doescape(f.form_cms_id.value);
 
     top.restoreSession();
-    $("#form_list").load( search_list ).show(); 
+    $("#form_list").load( search_list ).show();
 
   return false;
  }
@@ -116,9 +115,7 @@ td { font-size:10pt; }
    alert('The target form was closed; I cannot apply your selection.');
   else
    opener.set_insurance(ins_id, ins_name);
-   parent.$.fn.fancybox.close();
-   parent.location.reload();
-   top.restoreSession();
+   dlgclose('InsSaveClose',false);
  }
 
  // This is set to true on a mousedown of the Save button.  The
@@ -153,7 +150,7 @@ td { font-size:10pt; }
 
 </head>
 
-<body class="body_top" onunload='imclosing()'>
+<body class="body_top">
 <?php
  // If we are saving, then save and close the window.
  //
@@ -219,9 +216,9 @@ if ($_POST['form_save']) {
         echo " alert('$info_msg');\n";
     }
 
-    echo " parent.$.fn.fancybox.close();\n";
     echo " top.restoreSession();\n";
-    echo " if (parent.set_insurance) parent.set_insurance($ins_id,'".addslashes($ins_name)."');\n";
+    echo " if (opener.set_insurance) opener.set_insurance($ins_id,'".addslashes($ins_name)."');\n";
+    echo " dlgclose();\n";
     echo "</script></body></html>\n";
     exit();
 }
@@ -239,21 +236,11 @@ if ($_POST['form_save']) {
 
 <p>
 <table border='0' width='100%'>
-
- <!--
- <tr>
-  <td valign='top' width='1%' nowrap>&nbsp;</td>
-  <td>
-   Note: Green fields are searchable.
-  </td>
- </tr>
- -->
-
  <tr>
   <td valign='top' width='1%' nowrap><b><?php xl('Name', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_name' maxlength='35'
-    class='search' style='width:100%' title=<?php xl('Name of insurance company', 'e');?> />
+    class='search input-sm' style='width:100%' title=<?php xl('Name of insurance company', 'e');?> />
   </td>
  </tr>
 
@@ -261,7 +248,7 @@ if ($_POST['form_save']) {
   <td valign='top' nowrap><b><?php xl('Attention', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_attn' maxlength='35'
-    class='search' style='width:100%' title=".xl('Contact name')." />
+    class='search input-sm' style='width:100%' title=".xl('Contact name')." />
   </td>
  </tr>
 
@@ -269,7 +256,7 @@ if ($_POST['form_save']) {
   <td valign='top' nowrap><b><?php xl('Address1', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_addr1' maxlength='35'
-    class='search' style='width:100%' title='First address line' />
+    class='search input-sm' style='width:100%' title='First address line' />
   </td>
  </tr>
 
@@ -277,7 +264,7 @@ if ($_POST['form_save']) {
   <td valign='top' nowrap><b><?php xl('Address2', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_addr2' maxlength='35'
-    class='search' style='width:100%' title='Second address line, if any' />
+    class='search input-sm' style='width:100%' title='Second address line, if any' />
   </td>
  </tr>
 
@@ -285,10 +272,10 @@ if ($_POST['form_save']) {
   <td valign='top' nowrap><b><?php xl('City/State', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_city' maxlength='25'
-    class='search' title='City name' />
+    class='search input-sm' title='City name' />
    &nbsp;
    <input type='text' size='3' name='form_state' maxlength='35'
-    class='search' title='State or locality' />
+    class='search input-sm' title='State or locality' />
   </td>
  </tr>
 
@@ -296,7 +283,7 @@ if ($_POST['form_save']) {
   <td valign='top' nowrap><b><?php xl('Zip/Country:', 'e'); ?></b></td>
   <td>
    <input type='text' size='20' name='form_zip' maxlength='10'
-    class='search' title='Postal code' />
+    class='search input-sm' title='Postal code' />
    &nbsp;
    <input type='text' size='20' name='form_country' value='USA' maxlength='35'
     title='Country name' />
@@ -307,31 +294,21 @@ if ($_POST['form_save']) {
   <td valign='top' nowrap><b><?php xl('Phone', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_phone' maxlength='20'
-    class='search' title='Telephone number' />
+    class='search input-sm' title='Telephone number' />
   </td>
  </tr>
-
- <!--
- <tr>
-  <td valign='top' width='1%' nowrap>&nbsp;</td>
-  <td>
-   &nbsp;<br><b>Other data:</b>
-  </td>
- </tr>
- -->
-
  <tr>
   <td valign='top' nowrap><b><?php xl('CMS ID', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_cms_id' maxlength='15'
-    class='search' title='Identifier assigned by CMS' />
+    class='search input-sm' title='Identifier assigned by CMS' />
   </td>
  </tr>
 
  <tr>
   <td valign='top' nowrap><b><?php xl('Payer Type', 'e');?>:</b></td>
   <td>
-   <select name='form_ins_type_code'>
+   <select name='form_ins_type_code' class="input-sm">
 <?php
 for ($i = 1; $i < count($ins_type_code_array); ++$i) {
     echo "   <option value='$i'";
@@ -346,7 +323,7 @@ for ($i = 1; $i < count($ins_type_code_array); ++$i) {
  <tr>
   <td valign='top' nowrap><b><?php xl('X12 Partner', 'e');?>:</b></td>
   <td>
-   <select name='form_partner' title='Default X12 Partner'>
+   <select name='form_partner' title='Default X12 Partner' class="input-sm">
     <option value=""><?php xl('None', 'e', '-- ', ' --'); ?></option>
 <?php
 while ($xrow = sqlFetchArray($xres)) {
@@ -366,7 +343,7 @@ while ($xrow = sqlFetchArray($xres)) {
 &nbsp;
 <input type='submit' value='<?php xl('Save as New', 'e'); ?>' name='form_save' onmousedown='save_clicked=true' />
 &nbsp;
-<input type='button' value='<?php xl('Cancel', 'e'); ?>' onclick='parent.$.fn.fancybox.close();'/>
+<input type='button' value='<?php xl('Cancel', 'e'); ?>' onclick='window.close();'/>
 </p>
 
 </center>

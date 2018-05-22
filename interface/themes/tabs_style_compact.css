@@ -48,6 +48,13 @@ body
     padding: 0;
 }
 
+#mainBox  .logo{
+    float: left;
+    margin:3px 4px 0px 10px;
+    width:20px;
+    z-index:10000;
+}
+
 #mainBox > div
 {
     flex: 0 1 auto;
@@ -80,6 +87,8 @@ body
     flex-direction: column;
     margin: 0;
     padding: 0;
+    border-left: 1pt solid black;
+    border-right: 1pt solid black;
 }
 
 #framesDisplay > div > iframe
@@ -126,120 +135,6 @@ body
     display:block;
 }
 
-.ui-draggable:hover {
-    cursor: move;
-    cursor: grab;
-    cursor: -moz-grab;
-    cursor: -webkit-grab;
-}
-
-.ui-draggable:active {
-    cursor: move;
-    cursor: grabbing;
-    cursor: -moz-grabbing;
-    cursor: -webkit-grabbing;
-}
-.ui-icon-gripsmall-diagonal-se {
-    background-position: -64px -224px;
-}
-.ui-icon, .ui-widget-content .ui-icon {
-    background-image: url("../../public/assets/jquery-ui-1-12-1/themes/sunny/images/ui-icons_d19405_256x240.png");
-}
-.ui-icon {
-    width: 16px;
-    height: 16px;
-}
-.ui-icon {
-    display: inline-block;
-    vertical-align: middle;
-    margin-top: -.25em;
-    position: relative;
-    text-indent: -99999px;
-    overflow: hidden;
-    background-repeat: no-repeat;
-}
-.ui-resizable-handle {
-    position: absolute;
-    font-size: 0.1px;
-    display: block;
-    -ms-touch-action: none;
-    touch-action: none;
-}
-.ui-resizable-se {
-    cursor: se-resize;
-    width: 12px;
-    height: 12px;
-    right: 1px;
-    bottom: 1px;
-}
-.ui-resizable-s {
-    cursor: s-resize;
-    height: 7px;
-    width: 100%;
-    bottom: -5px;
-    left: 0;
-}
-.ui-resizable-e {
-    cursor: e-resize;
-    width: 7px;
-    right: -5px;
-    top: 0;
-    height: 100%;
-}
-
-#dialogDiv
-{
-    margin: 0;
-    padding:0;
-    border:0;
-    position:absolute;
-
-    width: 99%;
-    height:99%;
-
-    background-color: gray;
-    z-index:1000;
-    opacity: 0.5;
-}
-
-#dialogDiv > div.container
-{
-    display: table;
-    background-color: gray;
-    margin: auto auto;
-    opacity: 1;
-}
-
-.dialogIframe
-{
-    position: absolute;
-    top:0;
-    left:0;
-    margin: auto auto;
-    opacity: 1;
-    z-index:10000;
-    border: 1px solid black;
-    border-radius: 10px;
-}
-
-div.closeDlgIframe {
-
-	position: absolute;
-	top: -12px;
-	right: -15px;
-	height: 30px;
-	width: 30px;
-	background: url('iframe_close.png') top left no-repeat;
-	cursor: pointer;
-	z-index: 10010;
-}
-
-.dialogIframe > iframe{
-    border: none;
-    border-radius: 10px;
-    height:100%;
-    width:100%;
-}
 #attendantData
 {
     min-height: 4em;
@@ -365,6 +260,7 @@ div.closeDlgIframe {
     float: left;
     padding:0px 0px;
     white-space: nowrap;
+    text-shadow: 0 1px 0 #f3f3f3;
 }
 .appMenu > span:hover
 {
@@ -449,10 +345,7 @@ div.closeDlgIframe {
 .body_top {
     background-color: #C9DBF2;
     padding:0px;
-    border-bottom:0.1pt solid black;
-    -moz-box-shadow:    0 0 10px #000;
-    -webkit-box-shadow:  0 0 10px #000;
-    box-shadow:          0 0 10px #000;
+    box-shadow:0 0 10px #939393;
     z-index:10;
 }
 .body_title {
@@ -495,4 +388,8 @@ div.closeDlgIframe {
         position:relative;
         top:6px;
         right:5px;
+}
+
+.float-element {
+    float: left;
 }

@@ -8,7 +8,7 @@
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @author    Robert Down <robertdown@live.com>
  * @copyright Copyright (c) 2008 cfapress <cfapress>
- * @copyright Copyright (c) 2016-2017 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2016-2018 Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2017 Robert Down <robertdown@live.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
@@ -40,7 +40,7 @@ $obj = formFetch("form_reviewofs", $_GET["id"]);
             </div>
         </div>
         <div class="row">
-            <form method=post action="<?php echo $rootdir; ?>/forms/reviewofs/save.php?mode=update&id=<?php echo $_GET["id"]; ?>" name="my_form" onsubmit="return top.restoreSession()">
+            <form method=post action="<?php echo $rootdir; ?>/forms/reviewofs/save.php?mode=update&id=<?php echo attr($_GET["id"]); ?>" name="my_form" onsubmit="return top.restoreSession()">
                 <fieldset>
                     <legend><?php echo xlt('General')?></legend>
                     <div class="row">
@@ -795,7 +795,7 @@ $obj = formFetch("form_reviewofs", $_GET["id"]);
                         <div class="col-sm-12 col-sm-offset-1 position-override">
                             <div class="btn-group oe-opt-btn-group-pinch" role="group">
                             <button type="submit" onclick="top.restoreSession()" class="btn btn-default btn-save"><?php echo xlt('Save'); ?></button>
-                            <button type="button" class="btn btn-link btn-cancel oe-opt-btn-separate-left" onclick="top.restoreSession(); location.href='<?php echo "$rootdir/patient_file/encounter/$returnurl";?>';"><?php echo xlt('Cancel');?></button>
+                            <button type="button" class="btn btn-link btn-cancel oe-opt-btn-separate-left" onclick="top.restoreSession(); parent.closeTab(window.name, false);"><?php echo xlt('Cancel');?></button>
                         </div>
                     </div>
                 </div>

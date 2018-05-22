@@ -24,6 +24,9 @@ require_once("$srcdir/clinical_rules.php");
 require_once("$srcdir/options.js.php");
 require_once("$srcdir/group.inc");
 require_once(dirname(__FILE__)."/../../../library/appointments.inc.php");
+
+use OpenEMR\Core\Header;
+use OpenEMR\Menu\PatientMenuRole;
 use OpenEMR\Reminder\BirthdayReminder;
 
 if (isset($_GET['set_pid'])) {
@@ -117,7 +120,7 @@ function image_widget($doc_id, $doc_catg)
         $image_file = $docobj->get_url_file();
         $image_width = $GLOBALS['generate_doc_thumb'] == 1 ? '' : 'width=100';
         $extension = substr($image_file, strrpos($image_file, "."));
-        $viewable_types = array('.png','.jpg','.jpeg','.png','.bmp','.PNG','.JPG','.JPEG','.PNG','.BMP'); // image ext supported by fancybox viewer
+        $viewable_types = array('.png','.jpg','.jpeg','.png','.bmp','.PNG','.JPG','.JPEG','.PNG','.BMP');
     if (in_array($extension, $viewable_types)) { // extention matches list
         $to_url = "<td> <a href = $web_root" .
         "/controller.php?document&retrieve&patient_id=$pid&document_id=$doc_id&as_file=false&original_file=true&disable_exit=false&show_original=true" .
@@ -161,20 +164,16 @@ if ($result3['provider']) {   // Use provider in case there is an ins record w/ 
 <html>
 
 <head>
-<?php html_header_show();?>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" type="text/css" href="../../../library/js/fancybox/jquery.fancybox-1.2.6.css" media="screen" />
-<script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
-<script type="text/javascript" src="../../../library/js/common.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="../../../library/js/fancybox/jquery.fancybox-1.2.6.js"></script>
+
+    <?php Header::setupHeader(['common']); ?>
+
 <script type="text/javascript" language="JavaScript">
 
  var mypcc = '<?php echo htmlspecialchars($GLOBALS['phone_country_code'], ENT_QUOTES); ?>';
  //////////
  function oldEvt(apptdate, eventid) {
-  dlgopen('../../main/calendar/add_edit_event.php?date=' + apptdate + '&eid=' + eventid, '_blank', 775, 500);
+   let title = '<?php echo xla('Appointments'); ?>';
+   dlgopen('../../main/calendar/add_edit_event.php?date=' + apptdate + '&eid=' + eventid, '_blank', 725, 500, '', title);
  }
 
  function advdirconfigure() {
@@ -187,8 +186,13 @@ if ($result3['provider']) {   // Use provider in case there is an ins record w/ 
  }
 
  // Process click on Delete link.
- function deleteme() {
-  dlgopen('../deleter.php?patient=<?php echo htmlspecialchars($pid, ENT_QUOTES); ?>', '_blank', 500, 450);
+ function deleteme() { // @todo don't think this is used any longer!!
+  dlgopen('../deleter.php?patient=<?php echo htmlspecialchars($pid, ENT_QUOTES); ?>', '_blank', 500, 450, '', '',{
+      allowResize: false,
+      allowDrag: false,
+      dialogId: 'patdel',
+      type: 'iframe'
+  });
   return false;
  }
 
@@ -202,8 +206,10 @@ if ($result3['provider']) {   // Use provider in case there is an ins record w/ 
  }
 
  function newEvt() {
-  dlgopen('../../main/calendar/add_edit_event.php?patientid=<?php echo htmlspecialchars($pid, ENT_QUOTES); ?>', '_blank', 775, 500);
-  return false;
+     let title = '<?php echo xla('Appointments'); ?>';
+     let url = '../../main/calendar/add_edit_event.php?patientid=<?php echo htmlspecialchars($pid, ENT_QUOTES); ?>';
+     dlgopen(url, '_blank', 725, 500, '', title);
+     return false;
  }
 
 function sendimage(pid, what) {
@@ -229,6 +235,54 @@ function toggleIndicator(target,div) {
         $("#"+div).show();
     $.post( "../../../library/ajax/user_settings.php", { target: div, mode: 1 });
     }
+}
+
+// edit prescriptions dialog.
+// called from stats.php.
+//
+function editScripts(url) {
+    var AddScript = function () {
+        var iam = top.tab_mode ? top.frames.editScripts : window[0];
+        iam.location.href = "<?php echo $GLOBALS['webroot']?>/controller.php?prescription&edit&id=&pid=<?php echo attr($pid);?>"
+    };
+    var ListScripts = function () {
+        var iam = top.tab_mode ? top.frames.editScripts : window[0];
+        iam.location.href = "<?php echo $GLOBALS['webroot']?>/controller.php?prescription&list&id=<?php echo attr($pid); ?>"
+    };
+
+    let title = '<?php echo xla('Prescriptions'); ?>';
+    let w = 810;
+    <?php if ($GLOBALS['weno_rx_enable']) {
+        echo 'w = 910;'; }?>
+
+
+    dlgopen(url, 'editScripts', w, 300, '', '', {
+        buttons: [
+            {text: '<?php echo xla('Add'); ?>', close: false, style: 'primary  btn-sm', click: AddScript},
+            {text: '<?php echo xla('List'); ?>', close: false, style: 'primary  btn-sm', click: ListScripts},
+            {text: '<?php echo xla('Done'); ?>', close: true, style: 'default btn-sm'}
+        ],
+        onClosed: 'refreshme',
+        allowResize: true,
+        allowDrag: true,
+        dialogId: 'editscripts',
+        type: 'iframe'
+    });
+}
+
+function doPublish() {
+    let title = '<?php echo xla('Publish Patient to FHIR Server'); ?>';
+    let url = top.webroot_url + '/phpfhir/providerPublishUI.php?patient_id=<?php echo attr($pid); ?>';
+
+    dlgopen(url, 'publish', 'modal-mlg', 750, '', '', {
+        buttons: [
+            {text: '<?php echo xla('Done'); ?>', close: true, style: 'default btn-sm'}
+        ],
+        allowResize: true,
+        allowDrag: true,
+        dialogId: '',
+        type: 'iframe'
+    });
 }
 
 $(document).ready(function(){
@@ -288,19 +342,7 @@ $(document).ready(function(){
     }
     ?>
     // load divs
-    $("#stats_div").load("stats.php", { 'embeddedScreen' : true }, function() {
-    // (note need to place javascript code here also to get the dynamic link to work)
-        $(".rx_modal").fancybox( {
-                'overlayOpacity' : 0.0,
-                'showCloseButton' : true,
-                'frameHeight' : 600,
-                'frameWidth' : 1200,
-            'centerOnScroll' : false,
-            'callbackOnClose' : function()  {
-                refreshme();
-            }
-        });
-    });
+    $("#stats_div").load("stats.php", { 'embeddedScreen' : true }, function() {});
     $("#pnotes_ps_expand").load("pnotes_fragment.php");
     $("#disclosures_ps_expand").load("disc_fragment.php");
 
@@ -308,15 +350,19 @@ $(document).ready(function(){
       top.restoreSession();
       $("#clinical_reminders_ps_expand").load("clinical_reminders_fragment.php", { 'embeddedScreen' : true }, function() {
           // (note need to place javascript code here also to get the dynamic link to work)
-          $(".medium_modal").fancybox( {
-                  'overlayOpacity' : 0.0,
-                  'showCloseButton' : true,
-                  'frameHeight' : 500,
-                  'frameWidth' : 800,
-                  'centerOnScroll' : false,
-                  'callbackOnClose' : function()  {
-                  refreshme();
-                  }
+          $(".medium_modal").on('click', function(e) {
+              e.preventDefault();e.stopPropagation();
+              dlgopen('', '', 800, 200, '', '', {
+                  buttons: [
+                      {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+                  ],
+                  onClosed: 'refreshme',
+                  allowResize: false,
+                  allowDrag: true,
+                  dialogId: 'demreminder',
+                  type: 'iframe',
+                  url: $(this).attr('href')
+              });
           });
       });
     <?php } // end crw?>
@@ -348,52 +394,116 @@ while ($gfrow = sqlFetchArray($gfres)) {
 <?php
 }
 ?>
-    // fancy box
-    enable_modals();
-
     tabbify();
 
 // modal for dialog boxes
-  $(".large_modal").fancybox( {
-    'overlayOpacity' : 0.0,
-    'showCloseButton' : true,
-    'frameHeight' : 600,
-    'frameWidth' : 1000,
-    'centerOnScroll' : false
-  });
+    $(".large_modal").on('click', function(e) {
+        e.preventDefault();e.stopPropagation();
+        dlgopen('', '', 1000, 600, '', '', {
+            buttons: [
+                {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+            ],
+            allowResize: true,
+            allowDrag: true,
+            dialogId: '',
+            type: 'iframe',
+            url: $(this).attr('href')
+        });
+    });
+
+    $(".rx_modal").on('click', function(e) {
+        e.preventDefault();e.stopPropagation();
+        var AddAmendment = function () {
+            var iam = top.tab_mode ? top.frames.editAmendments : window[0];
+            iam.location.href = "<?php echo $GLOBALS['webroot']?>/interface/patient_file/summary/add_edit_amendments.php"
+        };
+        var ListAmendments = function () {
+            var iam = top.tab_mode ? top.frames.editAmendments : window[0];
+            iam.location.href = "<?php echo $GLOBALS['webroot']?>/interface/patient_file/summary/list_amendments.php"
+        };
+        var title = '<?php echo xla('Amendments'); ?>';
+        dlgopen('', 'editAmendments', 800, 300, '', title, {
+            buttons: [
+                {text: '<?php echo xla('Add'); ?>', close: false, style: 'primary  btn-sm', click: AddAmendment},
+                {text: '<?php echo xla('List'); ?>', close: false, style: 'primary  btn-sm', click: ListAmendments},
+                {text: '<?php echo xla('Done'); ?>', close: true, style: 'default btn-sm'}
+            ],
+            onClosed: 'refreshme',
+            allowResize: true,
+            allowDrag: true,
+            dialogId: '',
+            type: 'iframe',
+            url: $(this).attr('href')
+        });
+    });
 
 // modal for image viewer
-  $(".image_modal").fancybox( {
-    'overlayOpacity' : 0.0,
-    'showCloseButton' : true,
-    'centerOnScroll' : false,
-    'autoscale' : true
-  });
+    $(".image_modal").on('click', function(e) {
+        e.preventDefault();e.stopPropagation();
+        dlgopen('', '', 400, 300, '', '<?php echo xla('Patient Images'); ?>', {
+            allowResize: true,
+            allowDrag: true,
+            dialogId: '',
+            type: 'iframe',
+            url: $(this).attr('href')
+        });
+    });
 
-  $(".iframe1").fancybox( {
-  'left':10,
-    'overlayOpacity' : 0.0,
-    'showCloseButton' : true,
-    'frameHeight' : 300,
-    'frameWidth' : 350
-  });
-// special size for patient portal
-  $(".small_modal").fancybox( {
-    'overlayOpacity' : 0.0,
-    'showCloseButton' : true,
-    'frameHeight' : 200,
-    'frameWidth' : 380,
-            'centerOnScroll' : false
+    $(".deleter").on('click', function(e) {
+        e.preventDefault();e.stopPropagation();
+        dlgopen('', '', 600, 360, '', '', {
+            buttons: [
+                {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+            ],
+            //onClosed: 'imdeleted',
+            allowResize: false,
+            allowDrag: false,
+            dialogId: 'patdel',
+            type: 'iframe',
+            url: $(this).attr('href')
+        });
+    });
+
+    $(".iframe1").on('click', function(e) {
+        e.preventDefault();e.stopPropagation();
+        dlgopen('', '', 350, 300, '', '', {
+            buttons: [
+                {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+            ],
+            allowResize: true,
+            allowDrag: true,
+            dialogId: '',
+            type: 'iframe',
+            url: $(this).attr('href')
+        });
+    });
+// for patient portal
+  $(".small_modal").on('click', function(e) {
+      e.preventDefault();e.stopPropagation();
+      dlgopen('', '', 380, 200, '', '', {
+          buttons: [
+              {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+          ],
+          allowResize: true,
+          allowDrag: true,
+          dialogId: '',
+          type: 'iframe',
+          url: $(this).attr('href')
+      });
   });
 
   function openReminderPopup() {
-      $("#reminder_popup_link").fancybox({
-          'overlayOpacity' : 0.0,
-          'showCloseButton' : true,
-          'frameHeight' : 500,
-          'frameWidth' : 500,
-          'centerOnScroll' : false,
-      }).trigger('click');
+      top.restoreSession()
+      dlgopen('', 'reminders', 500, 250, '', '', {
+          buttons: [
+              {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+          ],
+          allowResize: true,
+          allowDrag: true,
+          dialogId: '',
+          type: 'iframe',
+          url: $("#reminder_popup_link").attr('href')
+      });
   }
 
 
@@ -406,29 +516,20 @@ while ($gfrow = sqlFetchArray($gfres)) {
     if ($birthdayAlert->isDisplayBirthdayAlert()) {
     ?>
     // show the active reminder modal
-    $("#birthday_popup").fancybox({
-        'overlayOpacity' : 0.0,
-        'showCloseButton' : true,
-        'frameHeight' : 170,
-        'frameWidth' : 200,
-        'centerOnScroll' : false,
-        'callbackOnClose' : function () {
-            <?php if ($active_reminders || $all_allergy_alerts) { ?>
-                //working only with setTimeout 0, must call openReminderPopup only ofter callbackOnClose is finished (fancybox v1 isn't support multi instances)
-                setTimeout(function () {
-                    openReminderPopup();
-                });
-            <?php }?>
-        }
-    }).trigger('click');
+    dlgopen('', 'bdayreminder', 300, 170, '', false, {
+        allowResize: false,
+        allowDrag: true,
+        dialogId: '',
+        type: 'iframe',
+        url: $("#birthday_popup").attr('href')
+    });
+
     <?php } elseif ($active_reminders || $all_allergy_alerts) { ?>
     openReminderPopup();
     <?php }?>
 <?php } elseif ($active_reminders || $all_allergy_alerts) { ?>
     openReminderPopup();
 <?php }?>
-
-
 
 });
 
@@ -472,19 +573,19 @@ if (sqlNumRows($result4)>0) {
     $query_result = sqlQuery("SELECT `date` FROM `form_encounter` WHERE `encounter` = ?", array($encounter)); ?>
  encurl = 'encounter/encounter_top.php?set_encounter=' + <?php echo attr($encounter);?> + '&pid=' + <?php echo attr($pid);?>;
     <?php if ($GLOBALS['new_tabs_layout']) { ?>
-  parent.left_nav.setEncounter('<?php echo oeFormatShortDate(date("Y-m-d", strtotime($query_result['date']))); ?>', '<?php echo attr($encounter); ?>', 'enc');
-  top.restoreSession();
+  parent.left_nav.setEncounter('<?php echo attr(oeFormatShortDate(date("Y-m-d", strtotime($query_result['date'])))); ?>', '<?php echo attr($encounter); ?>', 'enc');
+    top.restoreSession();
   parent.left_nav.loadFrame('enc2', 'enc', 'patient_file/' + encurl);
     <?php } else { ?>
   var othername = (window.name == 'RTop') ? 'RBot' : 'RTop';
-  parent.left_nav.setEncounter('<?php echo oeFormatShortDate(date("Y-m-d", strtotime($query_result['date']))); ?>', '<?php echo attr($encounter); ?>', othername);
-  top.restoreSession();
+  parent.left_nav.setEncounter('<?php echo attr(oeFormatShortDate(date("Y-m-d", strtotime($query_result['date'])))); ?>', '<?php echo attr($encounter); ?>', othername);
+    top.restoreSession();
   parent.frames[othername].location.href = '../' + encurl;
     <?php } ?>
 <?php } // end setting new encounter id (only if new pid is also set) ?>
 }
 
-$(window).load(function() {
+$(window).on('load', function() {
  setMyPatient();
 });
 
@@ -525,9 +626,9 @@ if (!empty($grparr['']['grp_size'])) {
 
 <body class="body_top patient-demographics">
 
-<a href='../reminder/active_reminder_popup.php' id='reminder_popup_link' style='display: none;' class='iframe' onclick='top.restoreSession()'></a>
+<a href='../reminder/active_reminder_popup.php' id='reminder_popup_link' style='display: none;' onclick='top.restoreSession()'></a>
 
-<a href='../birthday_alert/birthday_pop.php?pid=<?php echo attr($pid); ?>&user_id=<?php echo attr($_SESSION['authId']); ?>' id='birthday_popup' style='display: none;' class='iframe' onclick='top.restoreSession()'></a>
+<a href='../birthday_alert/birthday_pop.php?pid=<?php echo attr($pid); ?>&user_id=<?php echo attr($_SESSION['authId']); ?>' id='birthday_popup' style='display: none;' onclick='top.restoreSession()'></a>
 <?php
 $thisauth = acl_check('patients', 'demo');
 if ($thisauth) {
@@ -553,9 +654,9 @@ if ($thisauth) : ?>
         </td>
         <?php if (acl_check('admin', 'super') && $GLOBALS['allow_pat_delete']) : ?>
         <td style='padding-left:1em;' class="delete">
-            <a class='css_button iframe'
+            <a class='css_button deleter'
                href='../deleter.php?patient=<?php echo htmlspecialchars($pid, ENT_QUOTES);?>'
-               onclick='top.restoreSession()'>
+               onclick='return top.restoreSession()'>
                 <span><?php echo htmlspecialchars(xl('Delete'), ENT_NOQUOTES);?></span>
             </a>
         </td>
@@ -583,7 +684,7 @@ if (($GLOBALS['portal_onsite_enable'] && $GLOBALS['portal_onsite_address']) ||
         if ($portalStatus['allow_patient_portal']=='YES') :
             $portalLogin = sqlQuery("SELECT pid FROM `patient_access_onsite` WHERE `pid`=?", array($pid));?>
                 <td style='padding-left:1em;'>
-                    <a class='css_button iframe small_modal'
+                    <a class='css_button small_modal'
                            href='create_portallogin.php?portalsite=on&patient=<?php echo htmlspecialchars($pid, ENT_QUOTES);?>'
                        onclick='top.restoreSession()'>
                             <?php $display = (empty($portalLogin)) ? xlt('Create Onsite Portal Credentials') : xlt('Reset Onsite Portal Credentials'); ?>
@@ -601,7 +702,7 @@ if ($GLOBALS['portal_offsite_enable'] && $GLOBALS['portal_offsite_address']) :
         $portalLogin = sqlQuery("SELECT pid FROM `patient_access_offsite` WHERE `pid`=?", array($pid));
         ?>
         <td style='padding-left:1em;'>
-            <a class='css_button iframe small_modal'
+            <a class='css_button small_modal'
                href='create_portallogin.php?portalsite=off&patient=<?php echo htmlspecialchars($pid, ENT_QUOTES);?>'
                onclick='top.restoreSession()'>
                 <span>
@@ -650,74 +751,37 @@ if ($GLOBALS['patient_id_category_name']) {
     $idcard_doc_id = get_document_by_catg($pid, $GLOBALS['patient_id_category_name']);
 }
 
+// Collect the patient menu then build it
+$menuPatient = new PatientMenuRole();
+$menu_restrictions = $menuPatient->getMenu();
 ?>
 <table cellspacing='0' cellpadding='0' border='0' class="subnav">
-  <tr>
-      <td class="small" colspan='4'>
-          <a href="../history/history.php" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('History'), ENT_NOQUOTES); ?></a>
-          |
-            <?php //note that we have temporarily removed report screen from the modal view ?>
-          <a href="../report/patient_report.php" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Report'), ENT_NOQUOTES); ?></a>
-          |
-            <?php //note that we have temporarily removed document screen from the modal view ?>
-          <a href="../../../controller.php?document&list&patient_id=<?php echo $pid;?>" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Documents'), ENT_NOQUOTES); ?></a>
-          |
-          <a href="../transaction/transactions.php" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Transactions'), ENT_NOQUOTES); ?></a>
-          |
-          <a href="stats_full.php?active=all" onclick='top.restoreSession()'>
-            <?php echo htmlspecialchars(xl('Issues'), ENT_NOQUOTES); ?></a>
-          |
-          <a href="../../reports/pat_ledger.php?form=1&patient_id=<?php echo attr($pid);?>" onclick='top.restoreSession()'>
-            <?php echo xlt('Ledger'); ?></a>
-          |
-          <a href="../../reports/external_data.php" onclick='top.restoreSession()'>
-            <?php echo xlt('External Data'); ?></a>
+    <tr>
+        <td class="small" colspan='4'>
 
-<!-- DISPLAYING HOOKS STARTS HERE -->
-<?php
-    $module_query = sqlStatement("SELECT msh.*,ms.obj_name,ms.menu_name,ms.path,m.mod_ui_name,m.type FROM modules_hooks_settings AS msh
-					LEFT OUTER JOIN modules_settings AS ms ON obj_name=enabled_hooks AND ms.mod_id=msh.mod_id
-					LEFT OUTER JOIN modules AS m ON m.mod_id=ms.mod_id
-					WHERE fld_type=3 AND mod_active=1 AND sql_run=1 AND attached_to='demographics' ORDER BY mod_id");
-    $DivId = 'mod_installer';
-    if (sqlNumRows($module_query)) {
-        $jid    = 0;
-        $modid  = '';
-        while ($modulerow = sqlFetchArray($module_query)) {
-            $DivId      = 'mod_'.$modulerow['mod_id'];
-            $new_category   = $modulerow['mod_ui_name'];
-            $modulePath     = "";
-            $added          = "";
-            if ($modulerow['type'] == 0) {
-                $modulePath     = $GLOBALS['customModDir'];
-                $added      = "";
-            } else {
-                $added      = "index";
-                $modulePath     = $GLOBALS['zendModDir'];
+            <?php
+            $first = true;
+            foreach ($menu_restrictions as $key => $value) {
+                if (!empty($value->children)) {
+                    // flatten to only show children items
+                    foreach ($value->children as $children_key => $children_value) {
+                        if (!$first) {
+                            echo "|";
+                        }
+                        $first = false;
+                        $link = ($children_value->pid != "true") ? $children_value->url : $children_value->url . attr($pid);
+                        echo '<a href="' . $link . '" onclick="' . $children_value->on_click .'"> ' . text($children_value->label) . ' </a>';
+                    }
+                } else {
+                    if (!$first) {
+                        echo "|";
+                    }
+                    $first = false;
+                    $link = ($value->pid != "true") ? $value->url : $value->url . attr($pid);
+                    echo '<a href="' . $link . '" onclick="' . $value->on_click .'"> ' . text($value->label) . ' </a>';
+                }
             }
-
-            if (!acl_check('admin', 'super') && !zh_acl_check($_SESSION['authUserID'], $modulerow['obj_name'])) {
-                continue;
-            }
-
-            $relative_link  = "../../modules/".$modulePath."/".$modulerow['path'];
-            $nickname   = $modulerow['menu_name'] ? $modulerow['menu_name'] : 'Noname';
-            $jid++;
-            $modid = $modulerow['mod_id'];
             ?>
-            |
-            <a href="<?php echo $relative_link; ?>" onclick='top.restoreSession()'>
-            <?php echo xlt($nickname); ?></a>
-        <?php
-        }
-    }
-    ?>
-<!-- DISPLAYING HOOKS ENDS HERE -->
-
         </td>
     </tr>
 </table> <!-- end header -->
@@ -1196,8 +1260,8 @@ expand_collapse_widget(
         $widgetTitle = xlt('Amendments');
         $widgetLabel = "amendments";
         $widgetButtonLabel = xlt("Edit");
-        $widgetButtonLink = $GLOBALS['webroot'] . "/interface/patient_file/summary/main_frameset.php?feature=amendment";
-        $widgetButtonClass = "iframe rx_modal";
+        $widgetButtonLink = $GLOBALS['webroot'] . "/interface/patient_file/summary/list_amendments.php?id=" . attr($pid);
+        $widgetButtonClass = "rx_modal";
         $linkMethod = "html";
         $bodyClass = "summary_item small";
         $widgetAuth = acl_check('patients', 'amendment', '', 'write');
@@ -1214,7 +1278,7 @@ expand_collapse_widget(
 
         while ($row=sqlFetchArray($result)) {
                 echo "&nbsp;&nbsp;";
-                echo "<a class= '" . $widgetButtonClass . "' href='" . $widgetButtonLink . "&id=" . attr($row['amendment_id']) . "' onclick='top.restoreSession()'>" . text($row['amendment_date']);
+                echo "<a class= '" . $widgetButtonClass . "' href='" . $GLOBALS['webroot'] . "/interface/patient_file/summary/add_edit_amendments.php?id=" . attr($row['amendment_id']) . "' onclick='top.restoreSession()'>" . text($row['amendment_date']);
                 echo "&nbsp; " . text($row['amendment_desc']);
 
                 echo "</a><br>\n";
@@ -1657,8 +1721,8 @@ foreach ($photos as $photo_doc_id) {
                 echo "<span title='" . htmlspecialchars($etitle, ENT_QUOTES) . "'>";
             }
 
-            echo "<b>" . htmlspecialchars($row['pc_eventDate'], ENT_NOQUOTES) . ", ";
-            echo htmlspecialchars(sprintf("%02d", $disphour) .":$dispmin " . xl($dispampm) . " (" . xl($dayname), ENT_NOQUOTES)  . ")</b> ";
+            echo "<b>" . text(oeFormatShortDate($row['pc_eventDate'])) . ", ";
+            echo text(sprintf("%02d", $disphour) .":$dispmin " . xl($dispampm) . " (" . xl($dayname))  . ")</b> ";
             if ($row['pc_recurrtype']) {
                 echo "<img src='" . $GLOBALS['webroot'] . "/interface/main/calendar/modules/PostCalendar/pntemplates/default/images/repeating8.png' border='0' style='margin:0px 2px 0px 2px;' title='".htmlspecialchars(xl("Repeating event"), ENT_QUOTES)."' alt='".htmlspecialchars(xl("Repeating event"), ENT_QUOTES)."'>";
             }
@@ -1682,18 +1746,29 @@ foreach ($photos as $photo_doc_id) {
 
         if ($resNotNull) { //////
             if ($count < 1) {
-                echo "&nbsp;&nbsp;" . htmlspecialchars(xl('None'), ENT_NOQUOTES);
+                echo "&nbsp;&nbsp;" . htmlspecialchars(xl('No Appointments'), ENT_NOQUOTES);
             } else { //////
                 if ($extraApptDate) {
                     echo "<div style='color:#0000cc;'><b>" . attr($extraApptDate) . " ( + ) </b></div>";
-                } else {
-                    echo "<div><hr></div>";
                 }
             }
-
+            // Show Recall if one exists
+            $query = sqlStatement("SELECT * FROM medex_recalls WHERE r_pid = ?", array($pid));
+            
+            while ($result2 = sqlFetchArray($query)) {
+                //tabYourIt('recall', 'main/messages/messages.php?go=' + choice);
+                //parent.left_nav.loadFrame('1', tabNAME, url);
+                echo "&nbsp;&nbsp<b>Recall: <a onclick=\"top.left_nav.loadFrame('1', 'rcb', '../interface/main/messages/messages.php?go=addRecall');\">" . text(oeFormatShortDate($result2['r_eventDate'])). " (". text($result2['r_reason']).") </a></b>";
+                $count2++;
+            }
+            //if there is no appt and no recall
+            if (($count < 1) && ($count2 < 1)) {
+                echo "<br /><br />&nbsp;&nbsp;<a onclick=\"top.left_nav.loadFrame('1', 'rcb', '../interface/main/messages/messages.php?go=addRecall');\">".xlt('No Recall')."</a>";
+            }
+            $count =0;
             echo "</div>";
         }
-    } // End of Appointments.
+    } // End of Appointments Widget.
 
 
     /* Widget that shows recurrences for appointments. */
@@ -1715,19 +1790,19 @@ foreach ($photos as $photo_doc_id) {
 
          //Fetch patient's recurrences. Function returns array with recurrence appointments' category, recurrence pattern (interpreted), and end date.
          $recurrences = fetchRecurrences($pid);
-        if ($recurrences[0] == false) { //if there are no recurrent appointments:
+        if (empty($recurrences)) { //if there are no recurrent appointments:
             echo "<div>";
             echo "<span>" . "&nbsp;&nbsp;" . xlt('None') . "</span>";
             echo "</div></div>";
         } else {
             foreach ($recurrences as $row) {
                 //checks if there are recurrences and if they are current (git didn't end yet)
-                if ($row == false || !recurrence_is_current($row['pc_endDate'])) {
+                if (!recurrence_is_current($row['pc_endDate'])) {
                     continue;
                 }
 
                 echo "<div>";
-                echo "<span>" . xlt('Appointment Category') . ': ' . xlt($row['pc_catname']) . "</span>";
+                echo "<span>" . xlt('Appointment Category') . ": <b>" . xlt($row['pc_catname']) . "</b></span>";
                 echo "<br>";
                 echo "<span>" . xlt('Recurrence') . ': ' . text($row['pc_recurrspec']) . "</span>";
                 echo "<br>";
@@ -1736,7 +1811,7 @@ foreach ($photos as $photo_doc_id) {
                     $red_text = " style=\"color:red;\" ";
                 }
 
-                echo "<span" . $red_text . ">" . xlt('End Date') . ': ' . text($row['pc_endDate']) . "</span>";
+                echo "<span" . $red_text . ">" . xlt('End Date') . ': ' . text(oeFormatShortDate($row['pc_endDate'])) . "</span>";
                 echo "</div>";
             }
 
@@ -1800,7 +1875,7 @@ foreach ($photos as $photo_doc_id) {
             }
 
             echo "<a href='javascript:oldEvt(" . htmlspecialchars(preg_replace("/-/", "", $row['pc_eventDate']), ENT_QUOTES) . ', ' . htmlspecialchars($row['pc_eid'], ENT_QUOTES) . ")' title='" . htmlspecialchars($etitle, ENT_QUOTES) . "'>";
-            echo "<b>" . htmlspecialchars(xl($dayname) . ", " . $row['pc_eventDate'], ENT_NOQUOTES) . "</b>" . xlt("Status") .  "(";
+            echo "<b>" . htmlspecialchars(xl($dayname) . ", " . oeFormatShortDate($row['pc_eventDate']), ENT_NOQUOTES) . "</b> " . xlt("Status") .  "(";
             echo " " .  generate_display_field(array('data_type'=>'1','list_id'=>'apptstat'), $row['pc_apptstatus']) . ")<br>";   // can't use special char parser on this
             echo htmlspecialchars("$disphour:$dispmin ") . xl($dispampm) . " ";
             echo htmlspecialchars($row['fname'] . " " . $row['lname'], ENT_NOQUOTES) . "</a><br>\n";

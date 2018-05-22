@@ -166,12 +166,11 @@ $result = getPnotesByDate(
 <link rel='stylesheet' href="<?php echo $css_header;?>" type="text/css">
 
 <!-- supporting javascript code -->
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
-<link rel="stylesheet" type="text/css" href="../../../library/js/fancybox/jquery.fancybox-1.2.6.css" media="screen" />
-<script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-3-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
+<!--<script type="text/javascript" src="../../../library/dialog.js?v=<?php /*echo $v_js_includes; */?>"></script>-->
 <script type="text/javascript" src="../../../library/js/common.js"></script>
-<script type="text/javascript" src="../../../library/js/fancybox/jquery.fancybox-1.2.6.js"></script>
+
 <script type="text/javascript">
 function submitform(attr) {
 if (attr="newnote")
@@ -198,8 +197,7 @@ if ($orderid) {
 $urlparms = "docid=$docid&orderid=$orderid";
 ?>
 
-<form border='0' method='post' name='new_note' id="new_note" target="_parent"
- action='pnotes_full.php?<?php echo $urlparms; ?>'>
+<form border='0' method='post' name='new_note' id="new_note" action='pnotes_full.php?<?php echo $urlparms; ?>'>
 
     <div>
         <div style='float:left; margin-right: 5px'>
@@ -428,9 +426,23 @@ $(document).ready(function(){
 });
 $(document).ready(function(){
     $("#cancel").click(function() {
-          parent.$.fn.fancybox.close();
+          dlgclose();
      });
 
+    $("#new_note").submit(function (event) {
+        event.preventDefault();
+        var post_url = $(this).attr("action");
+        var request_method = $(this).attr("method");
+        var form_data = $(this).serialize();
+
+        $.ajax({
+            url: post_url,
+            type: request_method,
+            data: form_data
+        }).done(function (r) { //
+            dlgclose('refreshme', false);
+        });
+    });
 });
 </script>
 

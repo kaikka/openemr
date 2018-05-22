@@ -104,7 +104,12 @@ if (!(isset($_SESSION['password_update']) || isset($_GET['requestNew']))) {
 <html>
 <head>
     <title><?php echo xlt('Patient Portal Login'); ?></title>
-    <?php Header::setupHeader(['datetime-picker']); ?>
+    <?php
+        $css = $GLOBALS['css_header'];
+        $GLOBALS['css_header'] = "";
+        Header::setupHeader(['datetime-picker']);
+        //$GLOBALS['css_header'] = $css;
+    ?>
     <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery.gritter-1-7-4/js/jquery.gritter.min.js"></script>
     <link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery.gritter-1-7-4/css/jquery.gritter.css" />
     <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/emodal-1-2-65/dist/eModal.js"></script>
@@ -166,7 +171,7 @@ if (!(isset($_SESSION['password_update']) || isset($_GET['requestNew']))) {
     }
 </script>
 </head>
-<body>
+<body class="skin-blue">
 <br><br>
 <div class="container text-center">
     <?php if (isset($_SESSION['password_update']) || isset($_GET['password_update'])) {
@@ -445,7 +450,7 @@ function callServer(action, value, value2, last, first) {
                 return false;
             }
             //alert(rtn); // sync alert.. rtn holds username and password for testing.
-            var message = "<?php echo xls(" Your new credentials have been sent. Check your email inbox and also possibly your spam folder. Once you log into your patient portal feel free to make an appointment or send us a secure message. We look forward to seeing you soon."); ?>"
+            var message = "<?php echo xls("Your new credentials have been sent. Check your email inbox and also possibly your spam folder. Once you log into your patient portal feel free to make an appointment or send us a secure message. We look forward to seeing you soon."); ?>"
             eModal.alert(message); // This is an async call. The modal close event exits us to portal landing page after cleanup.
         }
     }).fail(function (err) {

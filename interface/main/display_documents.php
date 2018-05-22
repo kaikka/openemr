@@ -155,7 +155,7 @@ $display_collapse_msg = "display:inline;";
 <body class="body_top">
 
 <div>
-    <span class='title'><?php echo text('Lab Documents'); ?></span>
+    <span class='title'><?php echo xlt('Lab Documents'); ?></span>
     <span id='docexpand' onclick='expandOrCollapse(1,"doc")' style='cursor:pointer;<?php echo $display_expand_msg ?>'>(expand)</span>
     <span id='doccollapse' onclick='expandOrCollapse(2,"doc")' style='cursor:pointer;<?php echo $display_collapse_msg ?>'>(collapse)</span>
     <br><br>
@@ -233,11 +233,11 @@ $display_collapse_msg = "display:inline;";
             }
 
             for ($i = 0; $i < count($notes); $i++) {
-                $note .= oeFormatShortDate(date('Y-m-d', strtotime($dates[$i]))) . " : " . text($notes[$i]) . "<br />";
+                $note .= text(oeFormatShortDate(date('Y-m-d', strtotime($dates[$i])))) . " : " . text($notes[$i]) . "<br />";
             }
             ?>
             <tr class="text">
-                <td><?php echo oeFormatShortDate(date('Y-m-d', strtotime($row['date']))); ?> </td>
+                <td><?php echo text(oeFormatShortDate(date('Y-m-d', strtotime($row['date'])))); ?> </td>
                 <td class="linkcell">
                     <a id="<?php echo attr($row['id']); ?>" title='<?php echo $url; ?>' onclick='top.restoreSession()'><?php echo text(basename($row['url'])); ?></a>
                 </td>

@@ -30,8 +30,10 @@
  require_once(dirname(__FILE__)."/../../../library/appointments.inc.php");
  require_once($GLOBALS['incdir']."/main/holidays/Holidays_Controller.php");
 
-    ?>
-    <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js?v=<?php echo $v_js_includes; ?>"></script>
+use OpenEMR\Core\Header;
+
+?>
+
 <?php
  // check access controls
 if (!acl_check('patients', 'appt', '', array('write','wsome'))) {
@@ -241,8 +243,16 @@ if (in_array($sdate, $holidays)) {
 }
 
 //////
+?>
 
+<!DOCTYPE html>
+<html>
+<head>
 
+    <?php Header::setupHeader(['common', 'datetime-picker', 'opener']); ?>
+    <title><?php echo xlt('Find Available Appointments'); ?></title>
+
+<?php
 
  // The cktime parameter is a number of minutes into the starting day of a
  // tentative appointment that is to be checked.  If it is present then we are
@@ -270,10 +280,10 @@ if (isset($_REQUEST['cktime'])) {
             echo "function mytimeout() {\n";
             echo " opener.top.restoreSession();\n";
             echo " opener.document.forms[0].submit();\n";
-            echo " window.close();\n";
+            echo " dlgclose();\n";
             echo "}\n";
-            echo "</script></head><body onload='setTimeout(\"mytimeout()\",250);'>" .
-        xlt('Time slot is open, saving event') . "...</body></html>";
+            echo "</script></head><body onload='setTimeout(\"mytimeout()\",2500);'><h4></br>..." .
+        xlt('Time slot is available, saving event') . "...</h4></body></html>";
             exit();
     }
 
@@ -281,18 +291,6 @@ if (isset($_REQUEST['cktime'])) {
     // after this page is loaded.
 }
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-<?php html_header_show(); ?>
-<title><?php echo xlt('Find Available Appointments'); ?></title>
-<link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
-
-
-<!-- for ajax-y stuff -->
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
 
@@ -301,7 +299,7 @@ if (isset($_REQUEST['cktime'])) {
    alert('<?php echo xls('The destination form was closed; I cannot act on your selection.'); ?>');
   else
    opener.setappt(year,mon,mday,hours,minutes);
-  window.close();
+  dlgclose();
   return false;
  }
 
@@ -316,38 +314,27 @@ form {
 #searchCriteria {
     text-align: center;
     width: 100%;
-    font-size: 0.8em;
+    /*font-size: 0.8em;*/
     background-color: #ddddff;
     font-weight: bold;
     padding: 3px;
 }
 #searchResultsHeader {
     width: 100%;
-    background-color: lightgrey;
-}
-#searchResultsHeader table {
-    width: 96%;  /* not 100% because the 'searchResults' table has a scrollbar */
     border-collapse: collapse;
+    background-color: #fff;
 }
 #searchResultsHeader th {
-    font-size: 0.7em;
+    /*font-size: 0.7em;*/
 }
 #searchResults {
     width: 100%;
-    height: 350px;
     overflow: auto;
-}
-
-.srDate { width: 20%; }
-.srTimes { width: 80%; }
-
-#searchResults table {
-    width: 100%;
     border-collapse: collapse;
     background-color: white;
 }
 #searchResults td {
-    font-size: 0.7em;
+    font-size: 0.9em;
     border-bottom: 1px solid gray;
     padding: 1px 5px 1px 5px;
 }
@@ -364,32 +351,29 @@ form {
 </head>
 
 <body class="body_top">
-
+<div class="container-responsive">
 <div id="searchCriteria">
-<form method='post' name='theform' action='find_appt_popup.php?providerid=<?php echo attr($providerid) ?>&catid=<?php echo attr($input_catid) ?>'>
+<form class="form-inline" method='post' name='theform' action='find_appt_popup.php?providerid=<?php echo attr($providerid) ?>&catid=<?php echo attr($input_catid) ?>'>
     <?php echo xlt('Start date:'); ?>
-   <input type='text' class='datepicker' name='startdate' id='startdate' size='10' value='<?php echo attr($sdate) ?>'
+   <input type='text' class='datepicker input-sm' name='startdate' id='startdate' size='10' value='<?php echo attr($sdate) ?>'
     title='<?php echo xla('yyyy-mm-dd starting date for search'); ?> '/>
     <?php echo xlt('for'); ?>
-   <input type='text' name='searchdays' size='3' value='<?php echo attr($searchdays) ?>'
+   <input type='text' class="input-sm" name='searchdays' size='3' value='<?php echo attr($searchdays) ?>'
     title='<?php echo xla('Number of days to search from the start date'); ?>' />
     <?php echo xlt('days'); ?>&nbsp;
    <input type='submit' value='<?php echo xla('Search'); ?>'>
+</form>
 </div>
-
 <?php if (!empty($slots)) : ?>
 
-<div id="searchResultsHeader" class="head">
-<table>
+<table class="table">
+<thead id="searchResultsHeader" class="head">
  <tr>
   <th class="srDate"><?php echo xlt('Day'); ?></th>
   <th class="srTimes"><?php echo xlt('Available Times'); ?></th>
  </tr>
-</table>
-</div>
-
-<div id="searchResults">
-<table>
+</thead>
+<tbody id="searchResults">
 <?php
     $lastdate = "";
     $ampmFlag = "am"; // establish an AM-PM line break flag
@@ -456,13 +440,9 @@ if ($lastdate) {
     echo " <tr><td colspan='2'> " . xlt('No openings were found for this period.') . "</td></tr>\n";
 }
 ?>
+</tbody>
 </table>
-</div>
-</div>
 <?php endif; ?>
-
-</form>
-</body>
 
 <script language='JavaScript'>
 
@@ -491,7 +471,7 @@ if (!$ckavail) {
             if (confirm('<?php echo xls('On this date there is a holiday, use it anyway?'); ?>')) {
                 opener.top.restoreSession();
                 opener.document.forms[0].submit();
-                window.close();
+                dlgclose();
             } <?php
         } else {
             //Someone is going to have to go over this with a fine-toothed comb because I couldn't really parse the original here
@@ -504,7 +484,7 @@ if (!$ckavail) {
             } ?>
             opener.top.restoreSession();
             opener.document.forms[0].submit();
-            window.close();
+            dlgclose();
         }
     <?php
         }
@@ -526,5 +506,6 @@ if (!$ckavail) {
 
 
 </script>
-
+</div>
+</body>
 </html>

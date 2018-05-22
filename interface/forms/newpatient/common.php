@@ -22,6 +22,7 @@ require_once("$srcdir/options.inc.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/lists.inc");
 
+use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
@@ -59,22 +60,12 @@ $ires = sqlStatement("SELECT id, type, title, begdate FROM lists WHERE " .
   "pid = ? AND enddate IS NULL " .
   "ORDER BY type, begdate", array($pid));
 ?>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE html>
 <html>
 <head>
-<?php html_header_show();?>
+
 <title><?php echo xlt('Patient Encounter'); ?></title>
-
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
-
-<link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/js/fancybox-1.3.4/jquery.fancybox-1.3.4.css" media="screen" />
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/fancybox-1.3.4/jquery.fancybox-1.3.4.pack.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
+    <?php Header::setupHeader(['jquery-ui', 'datetime-picker']); ?>
 
 <!-- validation library -->
 <?php
@@ -89,7 +80,11 @@ require_once($GLOBALS['srcdir'] . "/validation/validation_script.js.php"); ?>
 
  // Process click on issue title.
  function newissue() {
-  dlgopen('../../patient_file/summary/add_edit_issue.php', '_blank', 800, 600);
+  dlgopen('../../patient_file/summary/add_edit_issue.php', '_blank', 700, 535, '', '', {
+      buttons: [
+          {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+      ]
+  });
   return false;
  }
 
@@ -118,13 +113,23 @@ require_once($GLOBALS['srcdir'] . "/validation/validation_script.js.php"); ?>
        $('#new-encounter-form').submit();
      }
    }
-
-   enable_big_modals();
-
+   $(".enc_issue").on('click', function(e) {
+       e.preventDefault();e.stopPropagation();
+       dlgopen('', '', 700, 650, '', '', {
+           buttons: [
+               {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+           ],
+           allowResize: true,
+           allowDrag: true,
+           dialogId: '',
+           type: 'iframe',
+           url: $(this).attr('href')
+       });
+   });
    $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_showseconds = false; ?>
-        <?php $datetimepicker_formatInput = false; ?>
+        <?php $datetimepicker_formatInput = true; ?>
         <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
         <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
    });
@@ -139,15 +144,31 @@ ajax_bill_loc(pid,dte,facility);
 
 // Handler for Cancel clicked when creating a new encounter.
 // Show demographics or encounters list depending on what frame we're in.
-function cancelClicked() {
- if (window.name == 'RBot') {
-  parent.left_nav.loadFrame('ens1', window.name, 'patient_file/history/encounters.php');
+ function cancelClickedNew() {
+     if (top.tab_mode) {
+         window.parent.left_nav.loadFrame('ens1', window.name, 'patient_file/history/encounters.php');
+     }
+     var target = window;
+     while (target != top) {
+         if (target.name == 'RBot') {
+             target.parent.left_nav.loadFrame('ens1', window.name, 'patient_file/history/encounters.php');
+             break;
+         }
+         else if (target.name == 'RTop') {
+             target.parent.left_nav.loadFrame('dem1', window.name, 'patient_file/summary/demographics.php');
+             break;
+         }
+         target = target.parent;
+     }
+     return false;
  }
- else {
-  parent.left_nav.loadFrame('dem1', window.name, 'patient_file/summary/demographics.php');
+
+ // Handler for cancel clicked when not creating a new encounter.
+ // Just reload the view mode.
+ function cancelClickedOld() {
+     location.href = '<?php echo "$rootdir/patient_file/encounter/forms.php"; ?>';
+     return false;
  }
- return false;
-}
 
 </script>
 </head>
@@ -177,13 +198,13 @@ function cancelClicked() {
 <div>
     <div style = 'float:left; margin-left:8px;margin-top:-3px'>
       <a href="javascript:saveClicked(undefined);" class="css_button link_submit"><span><?php echo xlt('Save'); ?></span></a>
-        <?php if ($viewmode || !isset($_GET["autoloaded"]) || $_GET["autoloaded"] != "1") { ?>
+<?php if ($viewmode || empty($_GET["autoloaded"])) { // not creating new encounter ?>
     </div>
     <div style = 'float:left; margin-top:-3px'>
-      <a href="<?php echo "$rootdir/patient_file/encounter/encounter_top.php"; ?>"
-        class="css_button link_submit" onClick="top.restoreSession()"><span><?php echo xlt('Cancel'); ?></span></a>
+      <a href="" class="css_button link_submit" onClick="return cancelClickedOld()">
+      <span><?php echo xlt('Cancel'); ?></span></a>
     <?php } else { // not $viewmode ?>
-      <a href="" class="css_button link_submit" onClick="return cancelClicked()">
+      <a href="" class="css_button link_submit" onClick="return cancelClickedNew()">
       <span><?php echo xlt('Cancel'); ?></span></a>
     <?php } // end not $viewmode ?>
     </div>
@@ -201,12 +222,14 @@ function cancelClicked() {
     <tr>
      <td class='bold' nowrap><?php echo xlt('Visit Category:'); ?></td>
      <td class='text'>
-      <select name='pc_catid' id='pc_catid'>
+      <select class="form-control" name='pc_catid' id='pc_catid'>
           <option value='_blank'>-- <?php echo xlt('Select One'); ?> --</option>
             <?php
+            //Bring only patient ang group categories
             $visitSQL = "SELECT pc_catid, pc_catname, pc_cattype 
                        FROM openemr_postcalendar_categories
-                       WHERE pc_active = 1  and pc_cattype!=2 ORDER BY pc_seq";
+                       WHERE pc_active = 1 and pc_cattype IN (0,3) and pc_constant_id  != 'no_show' ORDER BY pc_seq";
+
             $visitResult = sqlStatement($visitSQL);
             $therapyGroupCategories = [];
 
@@ -218,7 +241,7 @@ function cancelClicked() {
                     $therapyGroupCategories[] = $catId;
                 }
 
-                if (($catId < 9 && $catId != "5") || $catId === "_blank") {
+                if ($catId === "_blank") {
                     continue;
                 }
 
@@ -260,7 +283,7 @@ function cancelClicked() {
     <tr>
      <td class='bold' nowrap><?php echo xlt('Facility:'); ?></td>
      <td class='text'>
-      <select name='facility_id' onChange="bill_loc()">
+      <select class="form-control" name='facility_id' onChange="bill_loc()">
 <?php
 
 if ($viewmode) {
@@ -302,7 +325,7 @@ if ($facilities) {
         <tr>
             <td><span class='bold' nowrap><?php echo xlt('POS Code'); ?>: </span></td>
             <td colspan="6">
-                <select name="pos_code">
+                <select class="form-control" name="pos_code">
                 <?php
 
                 $pc = new POSRef();
@@ -330,7 +353,7 @@ if ($sensitivities && count($sensitivities)) {
 ?>
    <td class='bold' nowrap><?php echo xlt('Sensitivity:'); ?></td>
     <td class='text'>
-     <select name='form_sensitivity'>
+     <select class="form-control" name='form_sensitivity'>
 <?php
 foreach ($sensitivities as $value) {
    // Omit sensitivities to which this user does not have access.
@@ -378,7 +401,7 @@ echo ">" . xlt('None'). "</option>\n";
     <tr id="therapy_group_name" style="display: none">
         <td class='bold' nowrap><?php echo xlt('Group name'); ?>:</td>
         <td>
-            <input type='text' size='10' name='form_group' id="form_group" style='width:100%;cursor:pointer;cursor:hand' placeholder='<?php echo xla('Click to select');?>' value='<?php echo $viewmode && in_array($result['pc_catid'], $therapyGroupCategories) ? attr(getGroup($result['external_id'])['group_name']) : ''; ?>' onclick='sel_group()' title='<?php echo xla('Click to select group'); ?>' readonly />
+            <input type='text' class="input-sm" size='10' name='form_group' id="form_group" style='width:100%;cursor:pointer;cursor:hand' placeholder='<?php echo xla('Click to select');?>' value='<?php echo $viewmode && in_array($result['pc_catid'], $therapyGroupCategories) ? attr(getGroup($result['external_id'])['group_name']) : ''; ?>' onclick='sel_group()' title='<?php echo xla('Click to select group'); ?>' readonly />
             <input type='hidden' name='form_gid' value='<?php echo $viewmode && in_array($result['pc_catid'], $therapyGroupCategories) ? attr($result['external_id']) : '' ?>' />
         </td>
     </tr>
@@ -387,9 +410,9 @@ echo ">" . xlt('None'). "</option>\n";
     <tr>
      <td class='bold' nowrap><?php echo xlt('Date of Service:'); ?></td>
      <td class='text' nowrap>
-      <input type='text' size='10' class='datepicker' name='form_date' id='form_date' <?php echo $disabled ?>
-       value='<?php echo $viewmode ? substr($result['date'], 0, 10) : date('Y-m-d'); ?>'
-       title='<?php echo xla('yyyy-mm-dd Date of service'); ?>' />
+      <input type='text' size='10' class='datepicker input-sm' name='form_date' id='form_date' <?php echo $disabled ?>
+       value='<?php echo $viewmode ? attr(oeFormatShortDate(substr($result['date'], 0, 10))) : oeFormatShortDate(date('Y-m-d')); ?>'
+       title='<?php echo xla('Date of service'); ?>' />
      </td>
     </tr>
 
@@ -398,9 +421,9 @@ echo ">" . xlt('None'). "</option>\n";
 } ?>>
      <td class='bold' nowrap><?php echo xlt('Onset/hosp. date:'); ?></td>
      <td class='text' nowrap><!-- default is blank so that while generating claim the date is blank. -->
-      <input type='text' size='10' class='datepicker' name='form_onset_date' id='form_onset_date'
-       value='<?php echo $viewmode && $result['onset_date']!='0000-00-00 00:00:00' ? substr($result['onset_date'], 0, 10) : ''; ?>'
-       title='<?php echo xla('yyyy-mm-dd Date of onset or hospitalization'); ?>' />
+      <input type='text' size='10' class='datepicker input-sm' name='form_onset_date' id='form_onset_date'
+       value='<?php echo $viewmode && $result['onset_date']!='0000-00-00 00:00:00' ? attr(oeFormatShortDate(substr($result['onset_date'], 0, 10))) : ''; ?>'
+       title='<?php echo xla('Date of onset or hospitalization'); ?>' />
      </td>
     </tr>
     <tr>
@@ -431,7 +454,7 @@ if ($issuesauth) {
   </div>
   <div style='float:left;margin-left:8px;margin-top:-3px'>
     <?php if (acl_check('patients', 'med', '', 'write')) { ?>
-       <a href="../../patient_file/summary/add_edit_issue.php" class="css_button_small link_submit iframe"
+       <a href="../../patient_file/summary/add_edit_issue.php" class="css_button_small link_submit enc_issue"
         onclick="top.restoreSession()"><span><?php echo xlt('Add'); ?></span></a>
         <?php } ?>
   </div>
@@ -448,7 +471,7 @@ if ($issuesauth) {
   <td class='text' valign='top'>
 
 <?php if ($issuesauth) { ?>
-   <select multiple name='issues[]' size='8' style='width:100%'
+   <select class="form-control" multiple name='issues[]' size='8' style='width:100%'
     title='<?php echo xla('Hold down [Ctrl] for multiple selections or to unselect'); ?>'>
 <?php
 while ($irow = sqlFetchArray($ires)) {
@@ -519,7 +542,7 @@ if (!$viewmode) { ?>
 if (!empty($erow['encounter'])) {
     // If there is an encounter from today then present the duplicate visit dialog
     echo "duplicateVisit('" . $erow['encounter'] . "', '" .
-    oeFormatShortDate(substr($erow['date'], 0, 10)) . "');\n";
+        attr(oeFormatShortDate(substr($erow['date'], 0, 10))) . "');\n";
 }
 }
 ?>
@@ -538,7 +561,11 @@ if (!empty($erow['encounter'])) {
   function sel_group() {
       top.restoreSession();
       var url = '<?php echo $GLOBALS['webroot']?>/interface/main/calendar/find_group_popup.php';
-      dlgopen(url, '_blank', 500, 400);
+      dlgopen(url, '_blank', 500, 400, '', '', {
+          buttons: [
+              {text: '<?php echo xla('Close'); ?>', close: true, style: 'default btn-sm'}
+          ]
+      });
   }
   // This is for callback by the find-group popup.
   function setgroup(gid, name) {

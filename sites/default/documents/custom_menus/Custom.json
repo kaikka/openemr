@@ -32,6 +32,23 @@
     ]
   },
   {
+        "label": "Recall Board",
+        "menu_id": "pfb0",
+        "target": "rcb",
+        "url": "/interface/main/messages/messages.php?go=Recalls",
+        "children": [],
+        "requirement": 0,
+        "acl_req": [
+          "patients",
+          "appt"
+        ],
+    "global_req_strict": [
+      "!disable_rcb"
+    ]
+
+   },
+
+  {
     "label": "Messages",
     "menu_id": "msg0",
     "target": "msg",
@@ -501,12 +518,16 @@
         "children": [],
         "requirement": 0,
         "acl_req": [
-          "menus",
-          "modle"
+          "admin",
+          "manage_modules"
         ]
       }
     ],
-    "requirement": 0
+    "requirement": 0,
+    "acl_req": [
+    "menus",
+    "modle"
+  ]
   },
   {
     "label": "Inventory",
@@ -1041,6 +1062,18 @@
             "url": "/interface/main/holidays/import_holidays.php",
             "children": [],
             "requirement": 0,
+            "acl_req": [
+              "admin",
+              "super"
+            ]
+          },
+          {
+            "label":"Weno Management",
+            "menu_id":"adm0",
+            "target":"adm",
+            "url":"/interface/weno/admin.php",
+            "children":[],
+            "requirement":0,
             "acl_req": [
               "admin",
               "super"

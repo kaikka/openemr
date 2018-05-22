@@ -35,8 +35,8 @@ function tabStatus(title,url,name,closable,visible,locked)
 function tabs_view_model()
 {
     this.tabsList=ko.observableArray();
-    this.tabsList.push(new tabStatus("One",webroot_url+"/interface/main/main_info.php","cal",true,true,false));
-    this.tabsList.push(new tabStatus("Two",webroot_url+"/interface/main/messages/messages.php?form_active=1","msg",true,false,false));
+    this.tabsList.push(new tabStatus("Loading...",webroot_url+"/interface/main/main_info.php","cal",true,true,false));
+    this.tabsList.push(new tabStatus("Loading...",webroot_url+"/interface/main/messages/messages.php?form_active=1","msg",true,false,false));
 //    this.tabsList.push(new tabStatus("Three"));
     this.text=ko.observable("Test");
     return this;
@@ -251,9 +251,26 @@ function loadCurrentEncounter()
 
 }
 
+function popMenuDialog(url, title) {
+    let notlike = title.toLowerCase();
+    dlgopen(url, 'menupopup', 'modal-mlg', 500, '', title, {
+        sizeHeight: notlike.search('label') !== -1 ? 'full' : 'auto'
+    });
+}
+
 // note the xl_strings_tabs_view_model variable is required for the alert messages and translations
 function menuActionClick(data,evt)
 {
+
+    // Yet another menu fixup for legacy 'popup'.
+    // let's abandon a tab and call a support function from this view.
+    // we'll take along uri and current menu label as title for dialog.
+    // @TODO Possibly add global to allow tab or popup.
+    if (data.target === 'pop') {
+        let title = $(evt.currentTarget).text();
+        return popMenuDialog(webroot_url + data.url(), title);
+    }
+
     if(data.enabled())
     {
         if(data.requirement===2)
@@ -265,7 +282,25 @@ function menuActionClick(data,evt)
                 return;
             }
         }
-        navigateTab(webroot_url+data.url(),data.target);
+
+        // Fixups for loading a new encounter form, as these are now in tabs.
+        // See loadNewForm() in left_nav.php for comparable logic in the non-tabs case.
+        var dataurl = data.url();
+        var matches = dataurl.match(/load_form.php\?formname=(\w+)/);
+        if (matches) {
+          // If the encounter frameset already exists, just tell it to add a tab for this form.
+          for (var i = 0; i < frames.length; ++i) {
+            if (frames[i].twAddFrameTab) {
+              frames[i].twAddFrameTab('enctabs', data.label(), webroot_url + dataurl);
+              return;
+            }
+          }
+          // Otherwise continue by creating the encounter frameset including this form.
+          dataurl = '/interface/patient_file/encounter/encounter_top.php?formname=' +
+            matches[1] + '&formdesc=' + encodeURIComponent(data.label());
+        }
+
+        navigateTab(webroot_url + dataurl, data.target);
         activateTabByName(data.target,true);
         var par = $(evt.currentTarget).closest("ul.menuEntries");
         par.wrap("<ul class='timedReplace' style='display:none;'></ul>");

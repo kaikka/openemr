@@ -2,10 +2,6 @@
 /*
  * Add or edit an event in the calendar.
  *
- * Can be displayed as a popup window, or as an iframe via
- * fancybox.
- *
- *
  * The event editor looks something like this:
  *
  * //------------------------------------------------------------//
@@ -58,11 +54,16 @@ if (!acl_check('patients', 'appt', '', array('write','wsome'))) {
     die(xl('Access not allowed'));
 }
 
+use OpenEMR\Core\Header;
+
 /* Things that might be passed by our opener. */
  $eid           = $_GET['eid'];         // only for existing events
  $date          = $_GET['date'];        // this and below only for new events
  $userid        = $_GET['userid'];
  $default_catid = $_GET['catid'] ? $_GET['catid'] : '5';
+
+ $_POST['form_date'] = DateToYYYYMMDD($_POST['form_date']);
+ $_POST['form_enddate'] = DateToYYYYMMDD($_POST['form_enddate']);
  //
 if ($date) {
     $date = substr($date, 0, 4) . '-' . substr($date, 4, 2) . '-' . substr($date, 6);
@@ -97,9 +98,7 @@ if (isset($_GET['starttimeh'])) {
 <?php $g_edit = acl_check("groups", "gcalendar", false, 'write');?>
 <?php $g_view = acl_check("groups", "gcalendar", false, 'view');?>
 
-
- <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js?v=<?php echo $v_js_includes; ?>"></script>
- <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-3-1-1/index.js"></script>
+<?php Header::setupHeader(['common', 'datetime-picker', 'opener']); ?>
 
 <!-- validation library -->
 <!--//Not lbf forms use the new validation, please make sure you have the corresponding values in the list Page validation-->
@@ -130,8 +129,8 @@ if (empty($collectthis)) {
     $collectthis = $collectthis[array_keys($collectthis)[0]]["rules"];
 }
 ?>
-<?php $disabled = (!$g_edit && $have_group_global_enabled )?' disabled=true; ':'';?>
-<?php if ($disabled) {
+<?php $group_disabled = ($_GET['group'] && !$g_edit && $have_group_global_enabled )?' disabled=true; ':'';?>
+<?php if ($group_disabled) {
     echo '<script>$( document ).ready(function(){
     $("input").prop("disabled", true);
     $("select").prop("disabled", true);
@@ -349,7 +348,7 @@ if (empty($collectthis)) {
 
              // the starting date of the event, pay attention with this value
              // when editing recurring events -- JRM Oct-08
-             $event_date = fixDate($_POST['form_date']);
+             $event_date = $_POST['form_date'];
 
              //If used new recurrence mechanism of set days every week
         if (!empty($_POST['days_every_week'])) {
@@ -364,7 +363,7 @@ if (empty($collectthis)) {
 
             $my_repeat_freq = implode(",", $days_every_week_arr);
             $my_repeat_type = 6;
-            $event_date = fixDate(setEventDate($_POST['form_date'], $my_repeat_freq));
+            $event_date = setEventDate($_POST['form_date'], $my_repeat_freq);
         } elseif (!empty($_POST['form_repeat'])) {
             $my_recurrtype = 1;
             if ($my_repeat_type > 4) {
@@ -563,7 +562,7 @@ if (empty($collectthis)) {
                     if ($_POST['form_date'] == $_POST['selected_date']) {
                         // user has NOT changed the start date of the event (and not recurrtype 3)
                         if ($my_recurrtype != 3) {
-                            $event_date = fixDate($_POST['event_start_date']);
+                            $event_date = $_POST['event_start_date'];
                         }
                     }
 
@@ -603,7 +602,7 @@ if (empty($collectthis)) {
                         "pc_room = '" . add_escape_custom($_POST['form_room']) . "', " .
                         "pc_informant = '" . add_escape_custom($_SESSION['authUserID']) . "', " .
                         "pc_eventDate = '" . add_escape_custom($event_date) . "', " .
-                        "pc_endDate = '" . add_escape_custom(fixDate($_POST['form_enddate'])) . "', " .
+                        "pc_endDate = '" . add_escape_custom($_POST['form_enddate']) . "', " .
                         "pc_duration = '" . add_escape_custom(($duration * 60)) . "', " .
                         "pc_recurrtype = '" . add_escape_custom($my_recurrtype) . "', " .
                         "pc_recurrspec = '" . add_escape_custom(serialize($recurrspec)) . "', " .
@@ -624,6 +623,7 @@ if (empty($collectthis)) {
             } elseif (!$row['pc_multiple']) {
                 if ($GLOBALS['select_multi_providers']) {
                     $prov = $_POST['form_provider'][0];
+                    $_POST['form_provider'] = $prov;
                 } else {
                     $prov =  $_POST['form_provider'];
                 }
@@ -682,7 +682,7 @@ if (empty($collectthis)) {
                     if ($_POST['form_date'] == $_POST['selected_date']) {
                         // user has NOT changed the start date of the event (and not recurrtype 3)
                         if ($my_recurrtype != 3) {
-                            $event_date = fixDate($_POST['event_start_date']);
+                            $event_date = $_POST['event_start_date'];
                         }
                     }
 
@@ -698,7 +698,7 @@ if (empty($collectthis)) {
                     "pc_room = '" . add_escape_custom($_POST['form_room']) . "', " .
                     "pc_informant = '" . add_escape_custom($_SESSION['authUserID']) . "', " .
                     "pc_eventDate = '" . add_escape_custom($event_date) . "', " .
-                    "pc_endDate = '" . add_escape_custom(fixDate($_POST['form_enddate'])) . "', " .
+                    "pc_endDate = '" . add_escape_custom($_POST['form_enddate']) . "', " .
                     "pc_duration = '" . add_escape_custom(($duration * 60)) . "', " .
                     "pc_recurrtype = '" . add_escape_custom($my_recurrtype) . "', " .
                     "pc_recurrspec = '" . add_escape_custom(serialize($recurrspec)) . "', " .
@@ -840,7 +840,7 @@ if (empty($collectthis)) {
           " if(window.opener.pattrk){" .
          "  window.opener.pattrk.submit()\n " . // This is for patient flow board page refresh}
           " }};\n";
-        echo " window.close();\n";
+        echo " dlgclose();\n";
         echo "</script>\n</body>\n</html>\n";
         exit();
     }
@@ -1022,21 +1022,16 @@ if (empty($collectthis)) {
 <!DOCTYPE html>
 <html>
 <head>
-<?php html_header_show(); ?>
+
 <title><?php echo $eid ? xlt('Edit') : xlt('Add New') ?> <?php echo xlt('Event');?></title>
-<link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <style>
 td { font-size:0.8em; }
 </style>
 
-<script type="text/javascript" src="../../../library/topdialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
-
 <script language="JavaScript">
+
+<?php require $GLOBALS['srcdir'] . "/formatting_DateToYYYYMMDD_js.js.php" ?>
 
  var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
 
@@ -1117,7 +1112,8 @@ while ($crow = sqlFetchArray($cres)) {
 
  // This invokes the find-patient popup.
  function sel_patient() {
-  dlgopen('find_patient_popup.php', '_blank', 500, 400);
+  let title = '<?php echo xlt('Patient Search'); ?>';
+  dlgopen('find_patient_popup.php', 'findPatient', 650, 300, '', title);
  }
 
  // This is for callback by the find-group popup.
@@ -1134,7 +1130,8 @@ while ($crow = sqlFetchArray($cres)) {
  // This invokes the find-group popup.
  function sel_group() {
      top.restoreSession();
-     dlgopen('find_group_popup.php', '_blank', 500, 400);
+     let title = '<?php echo xlt('Group Search'); ?>';
+     dlgopen('find_group_popup.php', '_blank', 650, 300, '', title);
  }
 
  // Do whatever is needed when a new event category is selected.
@@ -1287,7 +1284,7 @@ var weekDays = new Array(
  function dateChanged() {
   var f = document.forms[0];
   if (!f.form_date.value) return;
-  var d = new Date(f.form_date.value);
+  var d = new Date(DateToYYYYMMDD_js(f.form_date.value));
   var downame = weekDays[d.getUTCDay()];
   var nthtext = '';
   var occur = Math.floor((d.getUTCDate() - 1) / 7);
@@ -1336,19 +1333,17 @@ var weekDays = new Array(
             f = document.forms[0].facility.options[f.selectedIndex].value;
         <?php }?>
         var c = document.forms[0].form_category;
-    var formDate = document.forms[0].form_date;
+        var formDate = document.forms[0].form_date;
+        let title = '<?php echo xlt('Available Appointments Calendar'); ?>';
         dlgopen('<?php echo $GLOBALS['web_root']; ?>/interface/main/calendar/find_appt_popup.php' +
                 '?providerid=' + s +
                 '&catid=' + c.options[c.selectedIndex].value +
                 '&facility=' + f +
                 '&startdate=' + formDate.value +
                 '&evdur=' + document.forms[0].form_duration.value +
-                '&eid=<?php echo 0 + $eid; ?>' +
-                extra,
-                '_blank', 500, 400);
+                '&eid=<?php echo 0 + $eid; ?>' + extra,
+                '', 725, 200, '', title);
     }
-
-
 
 </script>
 
@@ -1356,9 +1351,9 @@ var weekDays = new Array(
 
 </head>
 
-<body class="body_top main-calendar-add_edit_event" onunload='imclosing()'>
-
-<form method='post' name='theform' id='theform' action='add_edit_event.php?eid=<?php echo attr($eid) ?>' />
+<body class="body_top main-calendar-add_edit_event">
+<div class="container-responsive">
+<form class="form-inline" method='post' name='theform' id='theform' action='add_edit_event.php?eid=<?php echo attr($eid) ?>' />
 <!-- ViSolve : Requirement - Redirect to Create New Patient Page -->
 <input   type='hidden' size='2' name='resname' value='empty' />
 <?php
@@ -1370,7 +1365,7 @@ if ($_POST["resname"]=="noresult") {
 			top.restoreSession();
 			opener.document.location="../../new/new.php";
 			// Close the window
-			window.close();
+			dlgclose();
 </script>';
 }
 
@@ -1388,7 +1383,7 @@ $classpati='';
 <input   type="hidden" name="rt2_flag2" id="rt2_flag2" value="<?php echo attr(isset($rspecs['rt2_pf_flag']) ? $rspecs['rt2_pf_flag'] : '0'); ?>">
 <!-- End of addition by epsdky -->
 <center>
-<table border='0' >
+<table class="table table-condensed" border='0' >
 <?php
     $provider_class='';
     $group_class='';
@@ -1428,13 +1423,13 @@ if ($_GET['prov']==true) {
         </ul>
 </th></tr>
 <tr><td colspan='10'>
-<table border='0' width='100%' bgcolor='#DDDDDD'>
+<table class="table table-condensed" border='0' width='100%' bgcolor='#DDDDDD'>
     <tr>
         <td width='1%' nowrap>
             <b><?php echo xlt('Category'); ?>:</b>
         </td>
         <td nowrap>
-            <select   name='form_category' onchange='set_category()' style='width:100%'>
+            <select class='input-sm' name='form_category' onchange='set_category()' style='width:100%'>
                 <?php echo $catoptions ?>
             </select>
         </td>
@@ -1451,9 +1446,9 @@ if ($_GET['prov']==true) {
             <b><?php echo xlt('Date'); ?>:</b>
         </td>
         <td nowrap>
-            <input   type='text' size='10' class='datepicker' name='form_date' id='form_date'
-                    value='<?php echo attr($date) ?>'
-                    title='<?php echo xla('yyyy-mm-dd event date or starting date'); ?>'
+            <input   type='text' size='10' class='datepicker input-sm' name='form_date' id='form_date'
+                    value='<?php echo attr(oeFormatShortDate($date)) ?>'
+                    title='<?php echo xla('event date or starting date'); ?>'
                     onchange='dateChanged()' />
         </td>
         <td nowrap>
@@ -1465,12 +1460,12 @@ if ($_GET['prov']==true) {
         </td>
         <td width='1%' nowrap id='tdallday3'>
             <span>
-                <input   type='text' size='2' name='form_hour' value='<?php echo attr($starttimeh) ?>'
+                <input class='input-sm'    type='text' size='2' name='form_hour' value='<?php echo attr($starttimeh) ?>'
                  title='<?php echo xla('Event start time'); ?>' /> :
-                <input   type='text' size='2' name='form_minute' value='<?php echo attr($starttimem) ?>'
+                <input class='input-sm'    type='text' size='2' name='form_minute' value='<?php echo attr($starttimem) ?>'
                  title='<?php echo xla('Event start time'); ?>' />&nbsp;
             </span>
-            <select   name='form_ampm' title='<?php echo xla("Note: 12:00 noon is PM, not AM"); ?>'>
+            <select class='input-sm'    name='form_ampm' title='<?php echo xla("Note: 12:00 noon is PM, not AM"); ?>'>
                 <option value='1'><?php echo xlt('AM'); ?></option>
                 <option value='2'<?php echo ($startampm == '2') ? " selected" : ""; ?>><?php echo xlt('PM'); ?></option>
             </select>
@@ -1481,7 +1476,7 @@ if ($_GET['prov']==true) {
    <b><?php echo xlt('Title'); ?>:</b>
   </td>
   <td nowrap>
-   <input   type='text' size='10' name='form_title' value='<?php echo attr($row['pc_title']); ?>'
+   <input class="input-sm" type='text' size='10' name='form_title' value='<?php echo attr($row['pc_title']); ?>'
     style='width:100%'
     title='<?php echo xla('Event title'); ?>' />
   </td>
@@ -1491,7 +1486,7 @@ if ($_GET['prov']==true) {
   <td nowrap id='tdallday4'><?php echo xlt('duration'); ?>
   </td>
   <td nowrap id='tdallday5'>
-   <input   type='text' size='4' name='form_duration' value='<?php echo attr($thisduration) ?>' title='<?php echo xla('Event duration in minutes'); ?>' />
+   <input class='input-sm'    type='text' size='4' name='form_duration' value='<?php echo attr($thisduration) ?>' title='<?php echo xla('Event duration in minutes'); ?>' />
     <?php echo xlt('minutes'); ?>
   </td>
  </tr>
@@ -1499,7 +1494,7 @@ if ($_GET['prov']==true) {
     <tr>
       <td nowrap><b><?php echo xlt('Facility'); ?>:</b></td>
       <td>
-      <select   name="facility" id="facility" >
+      <select class="input-sm" name="facility" id="facility" >
         <?php
 
       // ===========================
@@ -1554,8 +1549,8 @@ if ($_GET['prov']==true) {
          <b><?php echo xlt('Patient'); ?>:</b>
      </td>
      <td nowrap>
-      <input   type='text' size='10' name='form_patient' id="form_patient" style='width:100%;cursor:pointer;cursor:hand' placeholder='<?php echo xla('Click to select');?>' value='<?php echo is_null($patientname) ? '' : attr($patientname); ?>' onclick='sel_patient()' title='<?php echo xla('Click to select patient'); ?>' readonly />
-      <input   type='hidden' name='form_pid' value='<?php echo attr($patientid) ?>' />
+      <input class='input-sm'    type='text' size='10' name='form_patient' id="form_patient" style='width:100%;cursor:pointer;cursor:hand' placeholder='<?php echo xla('Click to select');?>' value='<?php echo is_null($patientname) ? '' : attr($patientname); ?>' onclick='sel_patient()' title='<?php echo xla('Click to select patient'); ?>' readonly />
+      <input class='input-sm'    type='hidden' name='form_pid' value='<?php echo attr($patientid) ?>' />
      </td>
      <td colspan='3' nowrap style='font-size:8pt'>
       <span class="infobox">
@@ -1584,8 +1579,8 @@ if ($_GET['group']==true &&  $have_group_global_enabled) {
    <b><?php echo xlt('Group'); ?>:</b>
   </td>
   <td nowrap>
-   <input   type='text' size='10' name='form_group' id="form_group" style='width:100%;cursor:pointer;cursor:hand' placeholder='<?php echo xla('Click to select');?>' value='<?php echo is_null($groupname) ? '' : attr($groupname); ?>' onclick='sel_group()' title='<?php echo xla('Click to select group'); ?>' readonly />
-   <input   type='hidden' name='form_gid' value='<?php echo attr($groupid) ?>' />
+   <input class='input-sm'    type='text' size='10' name='form_group' id="form_group" style='width:100%;cursor:pointer;cursor:hand' placeholder='<?php echo xla('Click to select');?>' value='<?php echo is_null($groupname) ? '' : attr($groupname); ?>' onclick='sel_group()' title='<?php echo xla('Click to select group'); ?>' readonly />
+   <input class='input-sm'    type='hidden' name='form_gid' value='<?php echo attr($groupid) ?>' />
   </td>
   <td colspan='3' nowrap style='font-size:8pt'>
    <span class="infobox">
@@ -1640,7 +1635,7 @@ if ($GLOBALS['select_multi_providers']) {
     }
 
     // build the selection tool
-    echo "<select    name='form_provider[]' style='width:100%' multiple='multiple' size='5' >";
+    echo "<select class='input-sm' name='form_provider[]' style='width:100%' multiple='multiple' size='5' >";
 
     while ($urow = sqlFetchArray($ures)) {
         echo "    <option value='" . attr($urow['id']) . "'";
@@ -1718,7 +1713,7 @@ if ($GLOBALS['select_multi_providers']) {
         }
     }
 
-    echo "<select     name='form_provider' style='width:100%' />";
+    echo "<select class='input-sm' name='form_provider' style='width:100%' />";
     while ($urow = sqlFetchArray($ures)) {
         echo "    <option value='" . attr($urow['id']) . "'";
         if ($urow['id'] == $defaultProvider) {
@@ -1778,7 +1773,7 @@ if ($GLOBALS['select_multi_providers']) {
   </td>
   <td nowrap>
 
-   <select   name='form_repeat_freq' title='<?php echo xla('Every, every other, every 3rd, etc.'); ?>'>
+   <select class='input-sm'  name='form_repeat_freq' title='<?php echo xla('Every, every other, every 3rd, etc.'); ?>'>
 <?php
 foreach (array(1 => xl('every'), 2 => xl('2nd'), 3 => xl('3rd'), 4 => xl('4th'), 5 => xl('5th'), 6 => xl('6th'))
  as $key => $value) {
@@ -1792,7 +1787,7 @@ foreach (array(1 => xl('every'), 2 => xl('2nd'), 3 => xl('3rd'), 4 => xl('4th'),
 ?>
    </select>
 
-   <select   name='form_repeat_type'>
+   <select class='input-sm'  name='form_repeat_type'>
 <?php
  // See common.api.php for these. Options 5 and 6 will be dynamically filled in
  // when the start date is set.
@@ -1859,7 +1854,7 @@ if ($_GET['group']!=true) {
     The following list will be invisible unless this is an In Office
     event, in which case form_apptstatus (above) is to be invisible.
    -->
-   <select   name='form_prefcat' style='width:100%;display:none' title='<?php echo xla('Preferred Event Category');?>'>
+   <select class='input-sm'  name='form_prefcat' style='width:100%;display:none' title='<?php echo xla('Preferred Event Category');?>'>
 <?php echo $prefcat_options ?>
    </select>
 
@@ -1870,7 +1865,7 @@ if ($_GET['group']!=true) {
   <td nowrap id='tdrepeat2'><?php echo xlt('until date'); ?>
   </td>
   <td nowrap>
-   <input   type='text' size='10' class='datepicker' name='form_enddate' id='form_enddate' value='<?php echo attr($recurrence_end_date) ?>' title='<?php echo xla('yyyy-mm-dd last date of this event');?>' />
+   <input   type='text' size='10' class='datepicker' name='form_enddate' id='form_enddate' value='<?php echo attr(oeFormatShortDate($recurrence_end_date)) ?>' title='<?php echo xla('last date of this event');?>' />
 <?php
 if ($repeatexdate != "") {
     $tmptitle = "The following dates are excluded from the repeating series";
@@ -1916,7 +1911,7 @@ if ($repeatexdate != "") {
    <b><?php echo xlt('Comments'); ?>:</b>
   </td>
   <td colspan='4' nowrap>
-   <input   type='text' size='40' name='form_comments' style='width:100%' value='<?php echo attr($hometext); ?>' title='<?php echo xla('Optional information about this event');?>' />
+   <input class='input-sm' type='text' size='40' name='form_comments' style='width:100%' value='<?php echo attr($hometext); ?>' title='<?php echo xla('Optional information about this event');?>' />
   </td>
  </tr>
 
@@ -1974,7 +1969,7 @@ if ($repeatexdate != "") {
 <input type="button" name="future_events" id="future_events" value="<?php echo xla('Future'); ?>">
 <input type="button" name="current_event" id="current_event" value="<?php echo xla('Current'); ?>">
 </div>
-
+</div>
 </body>
 
 <script language='JavaScript'>
@@ -1997,7 +1992,7 @@ $(document).ready(function(){
     $("#form_duplicate").click(function(e) { validateform(e,"duplicate"); });
     $("#find_available").click(function() { find_available(''); });
     $("#form_delete").click(function() { deleteEvent(); });
-    $("#cancel").click(function() { window.close(); });
+    $("#cancel").click(function() { dlgclose(); });
 
     // buttons affecting the modification of a repeating event
     $("#all_events").click(function() { $("#recurr_affect").val("all"); EnableForm(); SubmitForm(); });
@@ -2011,7 +2006,7 @@ $(document).ready(function(){
     $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_showseconds = false; ?>
-        <?php $datetimepicker_formatInput = false; ?>
+        <?php $datetimepicker_formatInput = true; ?>
         <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
         <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
     });
@@ -2048,7 +2043,7 @@ function validateform(event,valu){
     <?php if (!$GLOBALS['allow_early_check_in']) { ?>
         //Prevent from user to change status to Arrive before the time
         //Dependent in globals setting - allow_early_check_in
-        if($('#form_apptstatus').val() == '@' && new Date($('#form_date').val()).getTime() > new Date().getTime()){
+        if($('#form_apptstatus').val() == '@' && new Date(DateToYYYYMMDD_js($('#form_date').val())).getTime() > new Date().getTime()){
             alert('<?php echo xls("You can not change status to 'Arrive' before the appointment's time") .'.'; ?>');
             $('#form_save').attr('disabled', false);
             return false;
@@ -2057,10 +2052,14 @@ function validateform(event,valu){
 
     //add rule if choose repeating event
     if ($('#form_repeat').is(':checked') || $('#days_every_week').is(':checked')){
+
+        var format = '<?php echo DateFormatRead('validateJS'); ?>';
+
         collectvalidation.form_enddate = {
             datetime: {
                 dateOnly: true,
                 earliest: $('#form_date').val(),
+                format: format,
                 message: "An end date later than the start date is required for repeated events!"
             },
             presence: true

@@ -31,20 +31,33 @@ assets:
         alreadyBuilt: true
         link: %css_header%
         autoload: true
+        allowNoLoad: true
     tabs-theme:
         basePath: %webroot%/interface/themes/
         link: %theme_tabs_layout%
+        rtl:
+            basePath: %webroot%/interface/themes/
+            link: rtl_%theme_tabs_layout%
     knockout:
         basePath: %assets_static_relative%/knockout-3-4-0/dist/
         script: knockout.js
     jquery-ui:
         basePath: %assets_static_relative%/jquery-ui-1-12-1/
         script: jquery-ui.min.js
+    jquery-ui-base:
+        basePath: %assets_static_relative%/jquery-ui-1-12-1/themes/base/
+        link: jquery-ui.min.css
     jquery-ui-darkness:
         basePath: %assets_static_relative%/jquery-ui-1-12-1/themes/ui-darkness/
         link: jquery-ui.min.css
     jquery-ui-sunny:
         basePath: %assets_static_relative%/jquery-ui-1-12-1/themes/sunny/
+        link: jquery-ui.min.css
+    jquery-ui-redmond:
+        basePath: %assets_static_relative%/jquery-ui-1-12-1/themes/redmond/
+        link: jquery-ui.min.css
+    jquery-ui-cupertino:
+        basePath: %assets_static_relative%/jquery-ui-1-12-1/themes/cupertino/
         link: jquery-ui.min.css
     fontawesome:
         basePath: %assets_static_relative%/font-awesome-4-6-3/css/
@@ -86,3 +99,21 @@ assets:
     emodal:
         basePath: %assets_static_relative%/emodal-1-2-65/dist/
         script: eModal.min.js
+    esign:
+        basePath: %webroot%/library/ESign/
+        script: js/jquery.esign.js
+        link: css/esign.css
+    dygraphs:
+        basePath: %assets_static_relative%/modified/dygraphs-2-0-0/
+        script: dygraph.js
+        link: dygraph.css
+    moment:
+        basePath: %assets_static_relative%/moment-2-13-0/
+        script: moment.js
+    pure:
+        basePath: %assets_static_relative%/pure-0-5-0/
+        link: pure-min.css
+    qtip2:
+        basePath: %assets_static_relative%/qtip2-3-0-3/dist/
+        script: jquery.qtip.min.js
+        link: jquery.qtip.min.css
