@@ -34,17 +34,11 @@
     require_once(dirname(__FILE__)."/../patient.inc");
     require_once(dirname(__FILE__)."/../log.inc");
     require_once(dirname(__FILE__)."/API.php");
-
+    
+    
+if (!empty($_POST['callback_key'])) {
     $MedEx = new MedExApi\MedEx('MedExBank.com');
-    $logged_in = $MedEx->login();
-if (($logged_in) && (!empty($_POST['callback_key']))) {
-    $data                   = json_decode($_POST, true);
-    $token                  = $logged_in['token'];
-    $response['callback']   = $MedEx->callback->receive($data);
-    $response['practice']   = $MedEx->practice->sync($token);
-    $response['campaigns']  = $MedEx->campaign->events($token);
-    $response['generate']   = $MedEx->events->generate($token, $response['campaigns']['events']);
-    $response['success']    = "200";
+    $response = $MedEx->login('1');
     header('Content-type: application/json');
     echo json_encode($response);
     exit;

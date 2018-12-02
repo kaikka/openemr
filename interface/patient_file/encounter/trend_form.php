@@ -2,13 +2,13 @@
 /**
  * Trending script for graphing objects.
  *
- * @package OpenEMR
- * @link    http://www.open-emr.org
- * @author  Brady Miller <brady.g.miller@gmail.com>
- * @author  Rod Roark <rod@sunsetsystems.com>
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- * @copyright Copyright (c) 2010-2017 Brady Miller <brady.g.miller@gmail.com>
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Rod Roark <rod@sunsetsystems.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  * @copyright Copyright (c) 2011 Rod Roark <rod@sunsetsystems.com>
+ * @copyright Copyright (c) 2010-2018 Brady Miller <brady.g.miller@gmail.com>
  */
 
 $special_timeout = 3600;
@@ -59,7 +59,7 @@ if ($is_lbf) {
   }
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-1-7-2/jquery.min.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/modified/dygraphs-2-0-0/dygraph.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <script type="text/javascript">
@@ -73,8 +73,9 @@ function show_graph(table_graph, name_graph, title_graph)
     type: 'POST',
         data: ({
             table: table_graph,
-              name: name_graph,
-              title: title_graph
+            name: name_graph,
+            title: title_graph,
+            csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
         }),
         dataType: "json",
         success: function(returnData){
@@ -87,6 +88,8 @@ function show_graph(table_graph, name_graph, title_graph)
                 delimiter: '\t',
                 xRangePad: 20,
                 yRangePad: 20,
+                width: 480,
+                height: 320,
                 xlabel: xlabel_translate
             }
         );
@@ -96,7 +99,14 @@ function show_graph(table_graph, name_graph, title_graph)
         },
         error: function() {
             // hide the chart div
-            $('#chart').hide();
+          $('#chart').hide();
+          if(!title_graph){
+              alert(<?php echo xlj('This item does not have enough data to graph');?> + ".\n" + <?php echo xlj('Please select an item that has more data');?> + ".");
+          }
+          else {
+              alert(title_graph + " " + <?php echo xlj('does not have enough data to graph');?> + ".\n" + <?php echo xlj('Please select an item that has more data');?> + ".");
+          }
+
         }
     });
 }
@@ -109,7 +119,7 @@ $(document).ready(function(){
   // Place click callback for graphing
 <?php if ($is_lbf) { ?>
   // For LBF the <td> has an id of label_id_$fieldid
-  $(".graph").click(function(e){ show_graph('<?php echo $formname; ?>', this.id.substring(9), $(this).text()) });
+  $(".graph").click(function(e){ show_graph(<?php echo js_escape($formname); ?>, this.id.substring(9), $(this).text()) });
 <?php } else { ?>
   $(".graph").click(function(e){ show_graph('form_vitals', this.id, $(this).text()) });
 <?php } ?>
@@ -127,7 +137,7 @@ $(document).ready(function(){
   // show blood pressure graph by default
 <?php if ($is_lbf) { ?>
 <?php if (!empty($default)) { ?>
-  show_graph('<?php echo $formname; ?>','<?php echo $default['field_id']; ?>','<?php echo $default['title']; ?>');
+  show_graph(<?php echo js_escape($formname); ?>,<?php echo js_escape($default['field_id']); ?>,<?php echo js_escape($default['title']); ?>);
 <?php } ?>
 <?php } else { ?>
   show_graph('form_vitals','bps','');
